@@ -181,10 +181,11 @@ class LibraryRepository extends Repository
             return $query->execute();
         }
         $conditions = [];
+
         foreach ($criteria as $key => $value) {
             $conditions[] = $query->equals($key, $value);
         }
-        return $query->matching($query->logicalAnd($conditions))->execute();
+        return $query->matching($query->logicalAnd(...$conditions))->execute();
     }
 
     /**

@@ -28,9 +28,9 @@ namespace LMS3\Lms3h5p\Controller;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
-use TYPO3\CMS\Backend\View\BackendTemplateView;
+use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
-use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 /**
  * AbstractModuleController
@@ -45,26 +45,10 @@ use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
  */
 class AbstractModuleController extends ActionController
 {
-    /**
-     * BackendTemplateContainer
-     *
-     * @var BackendTemplateView
-     */
-    protected $view;
-
-    /**
-     * Generates the action menu
-     *
-     * @return void
-     */
-    protected function generateMenu(): void
+    protected function generateMenu(ModuleTemplate $moduleTemplate): void
     {
         $menuItems = $this->getMenuItems();
-
-        $uriBuilder = $this->objectManager->get(UriBuilder::class);
-        $uriBuilder->setRequest($this->request);
-
-        $menu = $this->view->getModuleTemplate()->getDocHeaderComponent()->getMenuRegistry()->makeMenu();
+        $menu = $moduleTemplate->getDocHeaderComponent()->getMenuRegistry()->makeMenu();
         $menu->setIdentifier('H5PModuleMenu');
 
         foreach ($menuItems as  $menuItemConfig) {
@@ -81,41 +65,19 @@ class AbstractModuleController extends ActionController
             $menu->addMenuItem($menuItem);
         }
 
-        $this->view->getModuleTemplate()->getDocHeaderComponent()->getMenuRegistry()->addMenu($menu);
-        $this->view->getModuleTemplate()->setFlashMessageQueue($this->controllerContext->getFlashMessageQueue());
+        $moduleTemplate->getDocHeaderComponent()->getMenuRegistry()->addMenu($menu);
     }
 
-    /**
-     * Creates te URI for a backend action
-     *
-     * @param string $controller
-     * @param string $action
-     * @param array $parameters
-     * @return string
-     */
-    protected function getHref($controller, $action, $parameters = []): string
+    protected function getHref(string $controller, string $action, array $parameters = []): string
     {
-        $uriBuilder = $this->objectManager->get(UriBuilder::class);
-        $uriBuilder->setRequest($this->request);
-        return $uriBuilder->reset()->uriFor($action, $parameters, $controller);
+        return $this->uriBuilder->uriFor($action, $parameters, $controller);
     }
 
-    /**
-     * Translate by id
-     *
-     * @param string $key
-     * @return string
-     */
     protected function translate(string $key): string
     {
-        return $GLOBALS['LANG']->sL('LLL:EXT:lms3h5p/Resources/Private/Language/locallang.xlf:' . $key);
+        return LocalizationUtility::translate('LLL:EXT:lms3h5p/Resources/Private/Language/locallang.xlf:' . $key, 'lms3h5p');
     }
 
-    /**
-     * Get menu items
-     *
-     * @return array
-     */
     private function getMenuItems(): array
     {
         return [

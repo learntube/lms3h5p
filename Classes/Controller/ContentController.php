@@ -31,14 +31,16 @@ namespace LMS3\Lms3h5p\Controller;
 use LMS3\Lms3h5p\Service\ContentService;
 use LMS3\Lms3h5p\Service\H5PIntegrationService;
 use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Backend\Attribute\Controller;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
-use TYPO3\CMS\Backend\View\BackendTemplateView;
+use TYPO3\CMS\Backend\Template\ModuleTemplate;
+use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Imaging\Icon;
+use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 use TYPO3\CMS\Extbase\Http\ForwardResponse;
-use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
 
 /**
  * ContentController
@@ -51,59 +53,61 @@ use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
  */
+#[Controller]
 class ContentController extends AbstractModuleController
 {
-    protected ContentService $contentService;
-    protected H5PIntegrationService $h5pIntegrationService;
+    protected ModuleTemplate $moduleTemplate;
 
-    /**
-     * @var BackendTemplateView
-     */
-    protected $defaultViewObjectName = BackendTemplateView::class;
-
-    public function __construct(H5PIntegrationService $integrationService, ContentService $contentService)
-    {
-        $this->contentService = $contentService;
-        $this->h5pIntegrationService = $integrationService;
+    public function __construct(
+        private readonly ModuleTemplateFactory $moduleTemplateFactory,
+        private readonly IconFactory $iconFactory,
+        private readonly H5PIntegrationService $h5pIntegrationService,
+        private readonly ContentService $contentService
+    ){
     }
 
-    /**
-     * Index action
-     */
+    public function initializeAction(): void
+    {
+        $this->moduleTemplate = $this->moduleTemplateFactory->create($this->request);
+        $this->moduleTemplate->setFlashMessageQueue($this->getFlashMessageQueue());
+        $actions = ['createAction', 'updateAction', 'deleteAction'];
+
+        if (!in_array($this->actionMethodName, $actions)) {
+            $this->generateMenu($this->moduleTemplate);
+            $this->registerDocheaderButtons();
+        }
+    }
+
     public function indexAction(): ResponseInterface
     {
         $this->setStoragePid();
-
         $contents = $this->contentService->findAll();
-        $this->view->assign('contents', $contents);
-        $this->view->assign('dateFormat', $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy']);
-        $this->view->assign('timeFormat', $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm']);
-        $this->view->assign('pid', empty(GeneralUtility::_GP('id')));
 
-        return $this->htmlResponse();
+        $this->moduleTemplate->assignMultiple([
+            'contents' => $contents,
+            'dateFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy'],
+            'timeFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm'],
+            'pid' => empty(GeneralUtility::_GP('id'))
+        ]);
+
+        return $this->moduleTemplate->renderResponse('Content/Index');
     }
 
-    /**
-     * Create new content
-     */
     public function newAction(): ResponseInterface
     {
-        $h5pIntegrationSettings = $this->h5pIntegrationService->getSettingsWithEditor($this->getControllerContext());
+        $h5pIntegrationSettings = $this->h5pIntegrationService->getSettingsWithEditor($this->uriBuilder);
 
-        $this->view->assign('h5pSettings', json_encode($h5pIntegrationSettings));
-        $this->view->assign('scripts', $h5pIntegrationSettings['core']['scripts']);
-        $this->view->assign('styles', $h5pIntegrationSettings['core']['styles']);
-        $this->view->assign('pid', empty(GeneralUtility::_GP('id')));
-        $this->view->assign('parameters', '');
+        $this->moduleTemplate->assignMultiple([
+            'h5pSettings' => json_encode($h5pIntegrationSettings),
+            'scripts' => $h5pIntegrationSettings['core']['scripts'],
+            'styles' => $h5pIntegrationSettings['core']['styles'],
+            'pid' => empty(GeneralUtility::_GET('id')),
+            'parameters' => ''
+        ]);
 
-        return $this->htmlResponse();
+        return $this->moduleTemplate->renderResponse('Content/New');
     }
 
-    /**
-     * Create content
-     *
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\NoSuchArgumentException
-     */
     public function createAction(): ResponseInterface
     {
         $this->setStoragePid();
@@ -129,58 +133,51 @@ class ContentController extends AbstractModuleController
         }
     }
 
-    /**
-     * Show details of content
-     */
     public function showAction(int $content): ResponseInterface
     {
         $this->setStoragePid();
 
         $content = $this->contentService->findByUid($content);
         $h5pIntegrationSettings = $this->h5pIntegrationService->getH5PSettings(
-            $this->controllerContext,
+            $this->uriBuilder,
             [
                 $content->getUid()
             ]
         );
 
-        $this->view->assign('content', $content);
-        $this->view->assign('h5pSettings', json_encode($h5pIntegrationSettings));
-        $this->view->assign('scripts', $this->h5pIntegrationService->getMergedScripts($h5pIntegrationSettings));
-        $this->view->assign('styles', $this->h5pIntegrationService->getMergedStyles($h5pIntegrationSettings));
+        $this->moduleTemplate->assignMultiple([
+            'content' => $content,
+            'h5pSettings' => json_encode($h5pIntegrationSettings),
+            'scripts' => $this->h5pIntegrationService->getMergedScripts($h5pIntegrationSettings),
+            'styles' => $this->h5pIntegrationService->getMergedStyles($h5pIntegrationSettings),
+        ]);
 
-        return $this->htmlResponse();
+        return $this->moduleTemplate->renderResponse('Content/Show');
     }
 
-    /**
-     * Edit content
-     */
     public function editAction(int $content): ResponseInterface
     {
         $content = $this->contentService->findByUid($content);
         $h5pIntegrationSettings = $this->h5pIntegrationService->getSettingsWithEditor(
-            $this->controllerContext,
+            $this->uriBuilder,
             $content->getUid()
         );
         $metadata = (object)['title' => $content->getTitle(), 'license' => $content->getLicense()];
         $parameters = '{"params":' . $content->getFiltered() . ', "metadata":' . json_encode($metadata) . '}';
         $options = $this->h5pIntegrationService->getH5PCoreInstance()->getDisplayOptionsForEdit($content->getDisable());
 
-        $this->view->assign('h5pSettings', json_encode($h5pIntegrationSettings));
-        $this->view->assign('scripts', $h5pIntegrationSettings['core']['scripts']);
-        $this->view->assign('styles', $h5pIntegrationSettings['core']['styles']);
-        $this->view->assign('content', $content);
-        $this->view->assign('parameters', $parameters);
-        $this->view->assign('options', $options);
+        $this->moduleTemplate->assignMultiple([
+            'h5pSettings' => json_encode($h5pIntegrationSettings),
+            'scripts' => $h5pIntegrationSettings['core']['scripts'],
+            'styles' => $h5pIntegrationSettings['core']['styles'],
+            'content' => $content,
+            'parameters' => $parameters,
+            'options' => $options,
+        ]);
 
-        return $this->htmlResponse();
+        return $this->moduleTemplate->renderResponse('Content/Edit');
     }
 
-    /**
-     * Update content
-     *
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\NoSuchArgumentException
-     */
     public function updateAction(): ResponseInterface
     {
         $library = $this->request->getArgument('library');
@@ -205,9 +202,6 @@ class ContentController extends AbstractModuleController
         }
     }
 
-    /**
-     * Delete content
-     */
     public function deleteAction(int $content): ResponseInterface
     {
         $content = $this->contentService->findByUid($content);
@@ -224,28 +218,19 @@ class ContentController extends AbstractModuleController
         return new ForwardResponse('index');
     }
 
-    /**
-     * Registers the Icons into the docheader
-     *
-     * @throws \InvalidArgumentException
-     */
     protected function registerDocheaderButtons(): void
     {
-        $buttonBar = $this->view->getModuleTemplate()->getDocHeaderComponent()->getButtonBar();
-
-        $uriBuilder = $this->controllerContext->getUriBuilder();
+        $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
         if ('indexAction' !== $this->actionMethodName) {
-            $uri = $uriBuilder->reset()->uriFor('index');
+            $uri = $this->uriBuilder->uriFor('index');
             $title = $this->translate('back');
-            $icon = $this->view->getModuleTemplate()
-                ->getIconFactory()
+            $icon = $this->iconFactory
                 ->getIcon('actions-view-go-back', Icon::SIZE_SMALL);
         } else {
-            $uri = $uriBuilder->reset()->uriFor('new');
+            $uri = $this->uriBuilder->reset()->uriFor('new');
             $title = $this->translate('createNewContent');
-            $icon = $this->view->getModuleTemplate()
-                ->getIconFactory()
+            $icon = $this->iconFactory
                 ->getIcon('actions-document-new', Icon::SIZE_SMALL);
         }
 
@@ -268,30 +253,15 @@ class ContentController extends AbstractModuleController
     }
 
     /**
-     * Initializes the view before invoking an action method.
-     */
-    protected function initializeView(ViewInterface $view): void
-    {
-        parent::initializeView($view);
-
-        $actions = ['createAction', 'updateAction', 'deleteAction'];
-
-        if (!in_array($this->actionMethodName, $actions)) {
-            $this->generateMenu();
-            $this->registerDocheaderButtons();
-        }
-    }
-
-    /**
      * Set current selected storage for content creation and display
      */
     protected function setStoragePid(): void
     {
-        $storagePid = GeneralUtility::_GP('id');
+        $storagePid = GeneralUtility::_GET('id');
         $frameworkConfiguration = $this->configurationManager->getConfiguration(
             ConfigurationManagerInterface::CONFIGURATION_TYPE_FRAMEWORK
         );
-        $persistenceConfiguration = array('persistence' => array('storagePid' => $storagePid));
+        $persistenceConfiguration = ['persistence' => ['storagePid' => $storagePid]];
         $this->configurationManager->setConfiguration(array_merge($frameworkConfiguration, $persistenceConfiguration));
     }
 }

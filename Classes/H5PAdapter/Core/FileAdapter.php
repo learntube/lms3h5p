@@ -33,11 +33,11 @@ use LMS3\Lms3h5p\Domain\Model\EditorTempFile;
 use LMS3\Lms3h5p\Domain\Repository\CachedAssetRepository;
 use LMS3\Lms3h5p\Domain\Repository\ContentRepository;
 use LMS3\Lms3h5p\Domain\Repository\EditorTempfileRepository;
-use LMS3\Lms3h5p\Traits\ObjectManageable;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Utility\PathUtility;
-use TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
+use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
+use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
+use TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
 
 /**
@@ -53,28 +53,29 @@ use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
  */
 class FileAdapter implements \H5PFileStorage
 {
-    use ObjectManageable;
+    protected array $h5pSettings;
+    protected ConfigurationManagerInterface $configurationManager;
+    protected PersistenceManager $persistenceManager;
+    protected ContentRepository $contentRepository;
+    protected CachedAssetRepository $cachedAssetRepository;
 
-    /**
-     * @var array
-     */
-    protected $h5pSettings;
+    public function injectConfigurationManager(ConfigurationManagerInterface $configurationManager)
+    {
+        $this->h5pSettings = $configurationManager->getConfiguration(
+            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS, 'Lms3h5p', 'Pi1'
+        );
+    }
 
-    /**
-     * @var ContentRepository
-     */
-    protected $contentRepository;
-
-    /**
-     * FileAdapter constructor.
-     */
     public function __construct()
     {
-        $configurationManager = $this->createObject(ConfigurationManager::class);
-        $this->h5pSettings = $configurationManager->getConfiguration(
-            ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Lms3h5p', 'Pi1'
+        $this->configurationManager = GeneralUtility::makeInstance(ConfigurationManagerInterface::class);
+        $this->persistenceManager = GeneralUtility::makeInstance(PersistenceManager::class);
+        $this->contentRepository = GeneralUtility::makeInstance(ContentRepository::class);
+        $this->cachedAssetRepository = GeneralUtility::makeInstance(CachedAssetRepository::class);
+        $this->h5pSettings = $this->configurationManager->getConfiguration(
+            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS, 'Lms3h5p', 'Pi1'
         );
-        $this->contentRepository = $this->createObject(ContentRepository::class);
+
     }
 
     /**
@@ -203,8 +204,8 @@ class FileAdapter implements \H5PFileStorage
      *  Path on file system to temporary export file.
      * @param string $filename
      *  Name of export file.
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws IllegalObjectTypeException
+     * @throws UnknownObjectException
      */
     public function saveExport($source, $filename)
     {
@@ -305,10 +306,8 @@ class FileAdapter implements \H5PFileStorage
             $cacheAsset = new CachedAsset();
             $cacheAsset->setHashKey($key);
             $cacheAsset->setType($type);
-            $cachedAssetRepository = $this->createObject(CachedAssetRepository::class);
-            $persistenceManager = $this->createObject(PersistenceManager::class);
-            $cachedAssetRepository->add($cacheAsset);
-            $persistenceManager->persistAll();
+            $this->cachedAssetRepository->add($cacheAsset);
+            $this->persistenceManager->persistAll();
         }
     }
 
@@ -407,13 +406,12 @@ class FileAdapter implements \H5PFileStorage
 
         @copy($_FILES['file']['tmp_name'], $path);
 
-        $editorTempfileRepository = $this->createObject(EditorTempfileRepository::class);
-        $persistenceManager = $this->createObject(PersistenceManager::class);
+        $editorTempfileRepository = GeneralUtility::makeInstance(EditorTempfileRepository::class);
         $editotTempFile = new EditorTempFile();
         $editotTempFile->setPath(ltrim($path, Environment::getPublicPath()));
         $editotTempFile->setCreatedAt(time());
         $editorTempfileRepository->add($editotTempFile);
-        $persistenceManager->persistAll();
+        $this->persistenceManager->persistAll();
 
         return $file;
     }

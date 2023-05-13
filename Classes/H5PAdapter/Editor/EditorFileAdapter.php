@@ -33,7 +33,6 @@ use LMS3\Lms3h5p\Domain\Model\LibraryTranslation;
 use LMS3\Lms3h5p\Domain\Repository\LibraryRepository;
 use LMS3\Lms3h5p\Domain\Repository\LibraryTranslationRepository;
 use LMS3\Lms3h5p\H5PAdapter\TYPO3H5P;
-use LMS3\Lms3h5p\Traits\ObjectManageable;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 
@@ -50,25 +49,13 @@ use TYPO3\CMS\Extbase\Persistence\QueryInterface;
  */
 class EditorFileAdapter implements \H5peditorStorage
 {
-    use ObjectManageable;
+    protected LibraryRepository $libraryRepository;
+    protected LibraryTranslationRepository $libraryTranslationRepository;
 
-    /**
-     * @var LibraryRepository
-     */
-    protected $libraryRepository;
-
-    /**
-     * @var LibraryTranslationRepository
-     */
-    protected $libraryTranslationRepository;
-
-    /**
-     * EditorFileAdapter constructor.
-     */
     public function __construct()
     {
-        $this->libraryRepository = $this->createObject(LibraryRepository::class);
-        $this->libraryTranslationRepository = $this->createObject(LibraryTranslationRepository::class);
+        $this->libraryRepository = GeneralUtility::makeInstance(LibraryRepository::class);
+        $this->libraryTranslationRepository = GeneralUtility::makeInstance(LibraryTranslationRepository::class);
     }
 
     /**
@@ -212,7 +199,7 @@ class EditorFileAdapter implements \H5peditorStorage
      */
     public static function saveFileTemporarily($data, $move_file)
     {
-        $interface = TYPO3H5P::getInstance()->getH5PInstance('interface');
+        $interface = TYPO3H5P::getInstance()->getH5PInstance();
 
         $path = $interface->getUploadedH5pPath();
 

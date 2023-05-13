@@ -48,9 +48,9 @@ class Setup
 {
     private array $ts;
 
-    public function __construct(ConfigurationManager $manager)
+    public function __construct(private readonly ConfigurationManagerInterface $configurationManager)
     {
-        $this->ts = $manager->getConfiguration(
+        $this->ts = $this->configurationManager->getConfiguration(
             ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
             'Lms3h5p',
             'Pi1'

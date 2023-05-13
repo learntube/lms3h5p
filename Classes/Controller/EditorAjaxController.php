@@ -45,19 +45,13 @@ use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
  */
 class EditorAjaxController extends ActionController
 {
-    protected H5PIntegrationService $h5pIntegrationService;
-
-    public function __construct(H5PIntegrationService $integrationService)
+    public function __construct(private readonly H5PIntegrationService $h5pIntegrationService)
     {
-        $this->h5pIntegrationService = $integrationService;
     }
 
-    /**
-     * Handle different types of request
-     */
     public function indexAction()
     {
-        $type = GeneralUtility::_GP('type');
+        $type = GeneralUtility::_GET('type');
         switch ($type) {
             case \H5PEditorEndpoints::CONTENT_TYPE_CACHE:
                 $this->contentTypeCache();
@@ -82,9 +76,6 @@ class EditorAjaxController extends ActionController
         exit;
     }
 
-    /**
-     * Content type cache
-     */
     protected function contentTypeCache(): void
     {
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
@@ -92,25 +83,19 @@ class EditorAjaxController extends ActionController
         );
     }
 
-    /**
-     * Install library
-     */
     protected function installLibrary(): void
     {
-        $id = GeneralUtility::_GP('id');
+        $id = GeneralUtility::_GET('id');
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             \H5PEditorEndpoints::LIBRARY_INSTALL,
-            GeneralUtility::_GP('moduleToken'),
+            GeneralUtility::_GET('moduleToken'),
             $id
         );
     }
 
-    /**
-     * Libraries
-     */
     protected function libraries(): void
     {
-        if (GeneralUtility::_GP('libraries')) {
+        if ($this->request->hasArgument('libraries')) {
             $this->h5pIntegrationService->getH5pEditor()->ajax->action(
                 \H5PEditorEndpoints::LIBRARIES
             );
@@ -124,9 +109,9 @@ class EditorAjaxController extends ActionController
 
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             \H5PEditorEndpoints::SINGLE_LIBRARY,
-            GeneralUtility::_GP('machineName'),
-            GeneralUtility::_GP('majorVersion'),
-            GeneralUtility::_GP('minorVersion'),
+            GeneralUtility::_GET('machineName'),
+            GeneralUtility::_GET('majorVersion'),
+            GeneralUtility::_GET('minorVersion'),
             $language,
             '',
             Environment::getPublicPath() . $this->h5pIntegrationService->getSettings()['h5pPublicFolder']['path'],
@@ -134,9 +119,6 @@ class EditorAjaxController extends ActionController
         );
     }
 
-    /**
-     * Upload files
-     */
     protected function uploadFiles(): void
     {
         $h5pCore = $this->h5pIntegrationService->getH5PCoreInstance();
@@ -153,27 +135,21 @@ class EditorAjaxController extends ActionController
         $file->printResult();
     }
 
-    /**
-     * Upload library
-     */
     protected function uploadLibrary(): void
     {
-        $contentId = GeneralUtility::_GP('contentId') ?? 0;
+        $contentId = GeneralUtility::_GET('contentId') ?? 0;
 
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             \H5PEditorEndpoints::LIBRARY_UPLOAD,
-            GeneralUtility::_GP('moduleToken'),
+            GeneralUtility::_GET('moduleToken'),
             $_FILES['h5p']['tmp_name'],
             $contentId
         );
     }
 
-    /**
-     * Get translations
-     */
     protected function translations(): void
     {
-        $language = GeneralUtility::_GP('language');
+        $language = GeneralUtility::_GET('language');
 
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             \H5PEditorEndpoints::TRANSLATIONS,

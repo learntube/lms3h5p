@@ -28,14 +28,13 @@ namespace LMS3\Lms3h5p\Service;
  * ************************************************************* */
 
 use LMS3\Lms3h5p\H5PAdapter\TYPO3H5P;
+use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\SingletonInterface;
 use LMS3\Lms3h5p\Domain\Model\Content;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use LMS3\Lms3h5p\H5PAdapter\Core\H5PFramework;
-use TYPO3\CMS\Extbase\Mvc\Controller\ControllerContext;
-use TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 /**
  * H5P Integration service
@@ -51,47 +50,30 @@ use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 class H5PIntegrationService implements SingletonInterface
 {
     protected array $h5pSettings;
-    protected TYPO3H5P $typo3H5p;
-    protected H5PFramework $h5pFramework;
-    protected ContentService $contentService;
-
-    public function __construct(ConfigurationManager $manager)
-    {
-        $this->h5pSettings = $manager->getConfiguration(
+    public function __construct(
+        private readonly ConfigurationManagerInterface $configurationManager,
+        private readonly ContentService $contentService
+    ) {
+        $this->h5pSettings = $this->configurationManager->getConfiguration(
             ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
             'Lms3h5p',
             'Pi1'
         );
     }
 
-    public function injectContentService(ContentService $contentService): void
-    {
-        $this->contentService = $contentService;
-    }
-
-    public function injectH5PFramework(H5PFramework $h5PFramework): void
-    {
-        $this->h5pFramework = $h5PFramework;
-    }
-
-    public function injectTypo3H5p(TYPO3H5P $service): void
-    {
-        $this->typo3H5p = $service;
-    }
-
     /**
      * Returns an array with a set of core settings that the H5P JavaScript needs
      * to do its thing. Can also include editor settings.
      */
-    public function getH5PSettings(ControllerContext $controllerContext, array $displayContentIds = []): array
+    public function getH5PSettings(UriBuilder $uriBuilder, array $displayContentIds = []): array
     {
         $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('lms3h5p_libraries');
         $cacheKey = sha1(__CLASS__ . md5(implode('-', $displayContentIds)));
         $coreSettings = $cache->get($cacheKey);
         if ($coreSettings === false) {
-            $coreSettings = $this->generateCoreSettings($controllerContext);
+            $coreSettings = $this->generateCoreSettings();
             $coreSettings['contents'] = $this->generateContentSettings(
-                $controllerContext,
+                $uriBuilder,
                 $displayContentIds
             );
 
@@ -106,10 +88,10 @@ class H5PIntegrationService implements SingletonInterface
     /**
      * Get the settings with editor
      */
-    public function getSettingsWithEditor(ControllerContext $controllerContext, int $editorContentId = -1): array
+    public function getSettingsWithEditor(UriBuilder $uriBuilder, int $editorContentId = -1): array
     {
-        $coreSettings = $this->generateCoreSettings($controllerContext);
-        $coreSettings['editor'] = $this->generateEditorSettings($controllerContext, $editorContentId);
+        $coreSettings = $this->generateCoreSettings();
+        $coreSettings['editor'] = $this->generateEditorSettings($uriBuilder, $editorContentId);
 
         return $coreSettings;
     }
@@ -118,9 +100,9 @@ class H5PIntegrationService implements SingletonInterface
      * Returns an array with a set of editor settings that the H5P JavaScript needs
      * to do its thing.
      */
-    private function generateEditorSettings(ControllerContext $controllerContext, int $contentId = -1): array
+    private function generateEditorSettings(UriBuilder $uriBuilder, int $contentId = -1): array
     {
-        $editorAjaxAction = $controllerContext->getUriBuilder()->reset()->uriFor(
+        $editorAjaxAction = $uriBuilder->uriFor(
             'index', [], 'EditorAjax'
         );
 
@@ -153,9 +135,9 @@ class H5PIntegrationService implements SingletonInterface
      * Returns an array with a set of core settings that the H5P JavaScript needs
      * to do its thing.
      */
-    public function generateCoreSettings(ControllerContext $controllerContext): array
+    public function generateCoreSettings(): array
     {
-        $settings = [
+        return [
             'baseUrl' => GeneralUtility::getIndpEnv('TYPO3_SITE_URL'),
             'url' => $this->h5pSettings['h5pPublicFolder']['url'],
             'postUserStatistics' => true,
@@ -175,8 +157,6 @@ class H5PIntegrationService implements SingletonInterface
                 'styles' => $this->getRelativeCoreStyleUrls()
             ]
         ];
-
-        return $settings;
     }
 
     /**
@@ -256,7 +236,7 @@ class H5PIntegrationService implements SingletonInterface
     /**
      * Get settings for given content
      */
-    private function generateContentSettings(ControllerContext $controllerContext, array $contentIds): array
+    private function generateContentSettings(UriBuilder $uriBuilder, array $contentIds): array
     {
         /** @var Content[] $contents */
         $contents = $this->contentService->findByUids($contentIds);
@@ -270,9 +250,9 @@ class H5PIntegrationService implements SingletonInterface
         foreach ($contents as $content) {
             $contentArray = $content->toAssocArray();
 
-            $embedUrl =  $controllerContext->getUriBuilder() ? $controllerContext->getUriBuilder()->reset()->uriFor(
+            $embedUrl = $uriBuilder->uriFor(
                 'index', ['content' => $content], 'ContentEmbed'
-            ) : '';
+            );
 
             $h5pCorePublicUrl = $this->h5pSettings['h5pPublicFolder']['url'] . $this->h5pSettings['subFolders']['core'];
 
@@ -426,9 +406,7 @@ class H5PIntegrationService implements SingletonInterface
      */
     protected function translate($key): string
     {
-        $lang = $GLOBALS['TSFE'] ?? $GLOBALS['LANG'];
-
-        return $lang->sL('LLL:EXT:lms3h5p/Resources/Private/Language/locallang_h5p.xlf:' . $key);
+        return LocalizationUtility::translate('LLL:EXT:lms3h5p/Resources/Private/Language/locallang_h5p.xlf:' . $key);
     }
 
     /**
@@ -450,7 +428,7 @@ class H5PIntegrationService implements SingletonInterface
      */
     public function getH5PCoreInstance(): \H5PCore
     {
-        return $this->typo3H5p->getH5PInstance('core');
+        return TYPO3H5P::getInstance()->getH5PInstance('core');
     }
 
     /**
@@ -458,7 +436,7 @@ class H5PIntegrationService implements SingletonInterface
      */
     public function getH5pContentValidator(): \H5PContentValidator
     {
-        return $this->typo3H5p->getH5PInstance('contentvalidator');
+        return TYPO3H5P::getInstance()->getH5PInstance('contentvalidator');
     }
 
     /**
@@ -466,7 +444,7 @@ class H5PIntegrationService implements SingletonInterface
      */
     public function getH5pEditor(): \H5peditor
     {
-        return $this->typo3H5p->getH5PInstance('editor');
+        return TYPO3H5P::getInstance()->getH5PInstance('editor');
     }
 
     public function getSettings(): array

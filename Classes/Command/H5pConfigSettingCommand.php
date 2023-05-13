@@ -9,7 +9,6 @@ use LMS3\Lms3h5p\H5PAdapter\TYPO3H5P;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use TYPO3\CMS\Extbase\Configuration\ConfigurationManager;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 
 /**
@@ -25,16 +24,14 @@ use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
  */
 class H5pConfigSettingCommand extends Command
 {
-    private array $ts;
-    private TYPO3H5P $h5p;
+    protected array $settings;
 
-    public function __construct(ConfigurationManager $manager, TYPO3H5P $h5p)
-    {
+    public function __construct(
+        private readonly ConfigurationManagerInterface $configurationManager,
+    ){
         parent::__construct();
 
-        $this->h5p = $h5p;
-
-        $this->ts = $manager->getConfiguration(
+        $this->settings = $this->configurationManager->getConfiguration(
             ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
             'Lms3h5p',
             'Pi1'
@@ -53,13 +50,13 @@ class H5pConfigSettingCommand extends Command
      */
     public function execute(InputInterface $input, OutputInterface $output): int
     {
-        $interface = $this->h5p->getH5PInstance('interface');
+        $interface = TYPO3H5P::getInstance()->getH5PInstance();
 
-        if (empty($this->ts['config'])) {
+        if (empty($this->settings['config'])) {
             return Command::FAILURE;
         }
 
-        foreach ($this->ts['config'] as $name => $value) {
+        foreach ($this->settings['config'] as $name => $value) {
             $interface->setOption($name, $value);
         }
 

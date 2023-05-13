@@ -27,6 +27,7 @@ namespace LMS3\Lms3h5p\H5PAdapter\Core;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use GuzzleHttp\Exception\GuzzleException;
 use LMS3\Lms3h5p\Domain\Model\CachedAsset;
 use LMS3\Lms3h5p\Domain\Model\Setting;
 use LMS3\Lms3h5p\Domain\Model\Content;
@@ -44,11 +45,12 @@ use LMS3\Lms3h5p\Domain\Repository\LibraryDependencyRepository;
 use LMS3\Lms3h5p\Domain\Repository\LibraryRepository;
 use LMS3\Lms3h5p\Domain\Repository\LibraryTranslationRepository;
 use LMS3\Lms3h5p\H5PAdapter\TYPO3H5P;
-use LMS3\Lms3h5p\Traits\ObjectManageable;
 use stdClass;
+use TYPO3\CMS\Core\Package\Exception\UnknownPackageException;
 use TYPO3\CMS\Core\Package\PackageManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
+use TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
 use TYPO3\CMS\Extbase\Persistence\PersistenceManagerInterface;
 use GuzzleHttp\Client;
@@ -68,83 +70,33 @@ use TYPO3\CMS\Extbase\Reflection\ObjectAccess;
  */
 class H5PFramework implements \H5PFrameworkInterface
 {
-    use ObjectManageable;
+    public const PLATFORM_NAME = 'TYPO3 CMS';
 
-    /**
-     * Platform name
-     */
-    const PLATFORM_NAME = 'TYPO3 CMS';
+    protected ?PackageManager $packageManager = null;
+    protected ?SettingRepository $settingRepository = null;
+    protected ?ContentTypeCacheEntryRepository $contentTypeCacheEntryRepository = null;
+    protected ?LibraryRepository $libraryRepository = null;
+    protected ?PersistenceManagerInterface $persistenceManager = null;
+    protected ?LibraryTranslationRepository $libraryTranslationRepository = null;
+    protected ?LibraryDependencyRepository $libraryDependencyRepository = null;
+    protected ?ContentRepository $contentRepository = null;
+    protected ?ContentDependencyRepository $contentDependencyRepository = null;
+    protected ?CachedAssetRepository $cachedAssetRepository = null;
 
-    /**
-     * @var PackageManager
-     */
-    protected $packageManager;
+    protected array $messages;
 
-    /**
-     * @var SettingRepository
-     */
-    protected $settingRepository;
-
-    /**
-     * @var ContentTypeCacheEntryRepository
-     */
-    protected $contentTypeCacheEntryRepository;
-
-    /**
-     * @var LibraryRepository
-     */
-    protected $libraryRepository;
-
-    /**
-     * @var PersistenceManagerInterface
-     */
-    protected $persistenceManager;
-
-    /**
-     * @var LibraryTranslationRepository
-     */
-    protected $libraryTranslationRepository;
-
-    /**
-     * @var LibraryDependencyRepository
-     */
-    protected $libraryDependencyRepository;
-
-    /**
-     * @var ContentRepository
-     */
-    protected $contentRepository;
-
-    /**
-     * @var ContentDependencyRepository
-     */
-    protected $contentDependencyRepository;
-
-    /**
-     * @var CachedAssetRepository
-     */
-    protected $cachedAssetRepository;
-
-    /**
-     * @var array
-     */
-    protected $messages;
-
-    /**
-     * H5PFramework constructor.
-     */
     public function __construct()
     {
-        $this->settingRepository = $this->createObject(SettingRepository::class);
-        $this->packageManager = $this->createObject(PackageManager::class);
-        $this->contentTypeCacheEntryRepository = $this->createObject(ContentTypeCacheEntryRepository::class);
-        $this->libraryRepository = $this->createObject(LibraryRepository::class);
-        $this->libraryDependencyRepository = $this->createObject(LibraryDependencyRepository::class);
-        $this->libraryTranslationRepository = $this->createObject(LibraryTranslationRepository::class);
-        $this->persistenceManager = $this->createObject(PersistenceManager::class);
-        $this->contentRepository = $this->createObject(ContentRepository::class);
-        $this->contentDependencyRepository = $this->createObject(ContentDependencyRepository::class);
-        $this->cachedAssetRepository = $this->createObject(CachedAssetRepository::class);
+        $this->settingRepository = GeneralUtility::makeInstance(SettingRepository::class);
+        $this->packageManager = GeneralUtility::makeInstance(PackageManager::class);
+        $this->contentTypeCacheEntryRepository = GeneralUtility::makeInstance(ContentTypeCacheEntryRepository::class);
+        $this->libraryRepository = GeneralUtility::makeInstance(LibraryRepository::class);
+        $this->libraryDependencyRepository = GeneralUtility::makeInstance(LibraryDependencyRepository::class);
+        $this->libraryTranslationRepository = GeneralUtility::makeInstance(LibraryTranslationRepository::class);
+        $this->persistenceManager = GeneralUtility::makeInstance(PersistenceManager::class);
+        $this->contentRepository = GeneralUtility::makeInstance(ContentRepository::class);
+        $this->contentDependencyRepository = GeneralUtility::makeInstance(ContentDependencyRepository::class);
+        $this->cachedAssetRepository = GeneralUtility::makeInstance(CachedAssetRepository::class);
 
         $this->setDefaultStorage();
     }
@@ -179,15 +131,9 @@ class H5PFramework implements \H5PFrameworkInterface
         );
     }
 
-    /**
-     * @return \H5PCore
-     */
     protected function getInjectedH5PCore(): \H5PCore
     {
-        $TYPO3H5P = GeneralUtility::makeInstance(TYPO3H5P::class);
-        $h5pInstance = $TYPO3H5P->getInstance();
-        /** @var \H5PCore $core */
-        return $h5pInstance->getH5PInstance('core');
+        return TYPO3H5P::getInstance()->getH5PInstance('core');
     }
 
     /**
@@ -198,14 +144,14 @@ class H5PFramework implements \H5PFrameworkInterface
      *   - name: The name of the platform, for instance "Wordpress"
      *   - version: The version of the platform, for instance "4.0"
      *   - h5pVersion: The version of the H5P plugin/module
-     * @throws \TYPO3\CMS\Core\Package\Exception\UnknownPackageException
+     * @throws UnknownPackageException
      */
     public function getPlatformInfo(): array
     {
         return [
-            "name" => self::PLATFORM_NAME,
-            "version" => $this->packageManager->getPackage("core")->getPackageMetaData()->getVersion(),
-            "h5pVersion" => $this->getOption('h5p_version')
+            'name' => self::PLATFORM_NAME,
+            'version' => $this->packageManager->getPackage('core')->getPackageMetaData()->getVersion(),
+            'h5pVersion' => $this->getOption('h5p_version')
         ];
     }
 
@@ -213,26 +159,25 @@ class H5PFramework implements \H5PFrameworkInterface
      * Fetches a file from a remote server using HTTP GET
      *
      * @param string $url Where you want to get or send data.
-     * @param array $data Data to post to the URL.
+     * @param null $data Data to post to the URL.
      * @param bool $blocking Set to 'FALSE' to instantly time out (fire and forget).
-     * @param string $stream Path to where the file should be saved.
-     * @return string The content (response body). NULL if something went wrong
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @param null $stream Path to where the file should be saved.
+     * @param bool $fullData
+     * @param array $headers
+     * @param array $files
+     * @param string $method
+     * @return bool|string The content (response body). NULL if something went wrong
      */
-    public function fetchExternalData($url, $data = NULL, $blocking = TRUE, $stream = NULL, $fullData = false, $headers = [], $files = [], $method = 'POST')
+    public function fetchExternalData($url, $data = NULL, $blocking = TRUE, $stream = NULL, $fullData = false, $headers = [], $files = [], $method = 'POST'): bool|string
     {
         $client = new Client();
         $options = [
-            // if $blocking is set, we want to do a synchronous request
             'synchronous' => $blocking,
-            // if we have something in $stream, we pass it into the sink
             'sink' => $stream,
-            // post data goes in form_params
             'form_params' => $data
         ];
 
         try {
-            // if $data is provided, we do a POST request - otherwise it's a GET
             $response = $client->request($data === null ? 'GET' : 'POST', $url, $options);
             if ($response->getStatusCode() === 200) {
                 return $response->getBody()->getSize() ? $response->getBody()->getContents() : true;
@@ -240,6 +185,7 @@ class H5PFramework implements \H5PFrameworkInterface
         } catch (GuzzleException $e) {
             $this->setErrorMessage($e->getMessage(), 'failed-fetching-external-data');
         }
+
         return false;
     }
 
@@ -283,15 +229,16 @@ class H5PFramework implements \H5PFrameworkInterface
      * Return messages
      *
      * @param string $type 'info' or 'error'
-     * @return string[]
+     * @return array|null
      */
-    public function getMessages($type)
+    public function getMessages($type): ?array
     {
         if (empty($this->messages[$type])) {
             return null;
         }
         $messages = $this->messages[$type];
         $this->messages[$type] = [];
+
         return $messages;
     }
 
@@ -307,7 +254,7 @@ class H5PFramework implements \H5PFrameworkInterface
      * @return string Translated string
      * Translated string
      */
-    public function t($message, $replacements = array())
+    public function t($message, $replacements = array()): string
     {
         // Insert !var as is, escape @var and emphasis %var.
         foreach ($replacements as $key => $replacement) {
@@ -538,7 +485,7 @@ class H5PFramework implements \H5PFrameworkInterface
      * @param bool $new
      * @return void
      * @throws IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      */
     public function saveLibraryData(&$libraryData, $new = TRUE)
     {
@@ -621,7 +568,7 @@ class H5PFramework implements \H5PFrameworkInterface
      * @param int $contentMainId
      *   Main id for the content if this is a system that supports versions
      * @throws IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      */
     public function updateContent($contentData, $contentMainId = NULL)
     {
@@ -668,7 +615,7 @@ class H5PFramework implements \H5PFrameworkInterface
      *   - preloaded
      *   - dynamic
      * @throws IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      */
     public function saveLibraryDependencies($libraryId, $dependencies, $dependency_type)
     {
@@ -702,7 +649,11 @@ class H5PFramework implements \H5PFrameworkInterface
                 $this->libraryDependencyRepository->update($existingDependency);
             } else {
                 // Depedency does not exist, create it
-                $dependency = new LibraryDependency($dependingLibrary, $requiredLibrary, $dependency_type);
+                $dependency = new LibraryDependency();
+                $dependency
+                    ->setDependencyType($dependency_type)
+                    ->setLibrary($dependingLibrary)
+                    ->setRequiredLibrary($requiredLibrary);
                 $this->libraryDependencyRepository->add($dependency);
                 $this->persistenceManager->persistAll();
             }
@@ -1068,7 +1019,7 @@ class H5PFramework implements \H5PFrameworkInterface
      *   Identifier for the setting
      * @param mixed $value Data
      *   Whatever we want to store as the setting
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      */
     public function setOption($name, $value)
     {
@@ -1080,11 +1031,13 @@ class H5PFramework implements \H5PFrameworkInterface
                 $configSetting->setConfigValue($value);
                 $this->settingRepository->update($configSetting);
             } else {
-                $configSetting = new Setting($name, $value);
+                $configSetting = new Setting();
+                $configSetting->setConfigKey($name);
+                $configSetting->setConfigValue($value);
                 $this->settingRepository->add($configSetting);
             }
             $this->persistenceManager->persistAll();
-        } catch (IllegalObjectTypeException $ex) {
+        } catch (IllegalObjectTypeException) {
             // Swallow, will never happen
         }
     }
@@ -1094,7 +1047,7 @@ class H5PFramework implements \H5PFrameworkInterface
      *
      * @param int $id Content identifier
      * @param array $fields Content fields, e.g. filtered or slug.
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      */
     public function updateContentFields($id, $fields)
     {
@@ -1122,7 +1075,7 @@ class H5PFramework implements \H5PFrameworkInterface
      *
      * @param array $library_ids
      * @throws IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      */
     public function clearFilteredParameters($library_ids)
     {
@@ -1213,7 +1166,7 @@ class H5PFramework implements \H5PFrameworkInterface
      * @param array $libraries
      *  List of dependencies(libraries) used to create the key
      * @throws IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      */
     public function saveCachedAssets($key, $libraries)
     {

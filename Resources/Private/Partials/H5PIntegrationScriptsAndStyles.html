@@ -1,7 +1,7 @@
 <f:for each="{styles}" as="style">
     <link rel="stylesheet" href="{style -> f:format.raw()}"/>
 </f:for>
-<script>
+<script nonce="{f:security.nonce()}">
     window.H5PIntegration = {h5pSettings -> f:format.raw()};
 </script>
 <f:for each="{scripts}" as="script">

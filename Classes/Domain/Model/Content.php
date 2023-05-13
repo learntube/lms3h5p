@@ -42,12 +42,12 @@ namespace LMS3\Lms3h5p\Domain\Model;
 class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
 {
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\Library
+     * @var Library
      */
     protected $library;
 
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\BackendUser
+     * @var BackendUser
      */
     protected $account;
 
@@ -180,7 +180,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @return \LMS3\Lms3h5p\Domain\Model\BackendUser|null
+     * @return BackendUser|null
      */
     public function getAccount(): ?BackendUser
     {

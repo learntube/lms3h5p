@@ -45,19 +45,9 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class EditorAjax implements \H5PEditorAjaxInterface
 {
-    /**
-     * @var LibraryRepository
-     */
-    protected $libraryRepository;
+    protected LibraryRepository $libraryRepository;
+    protected ContentTypeCacheEntryRepository $contentTypeCacheEntryRepository;
 
-    /**
-     * @var \LMS3\Lms3h5p\Domain\Repository\ContentTypeCacheEntryRepository
-     */
-    protected $contentTypeCacheEntryRepository;
-
-    /**
-     * EditorAjax constructor.
-     */
     public function __construct()
     {
         $this->libraryRepository = GeneralUtility::makeInstance(LibraryRepository::class);

@@ -25,31 +25,30 @@
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
-use \TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
+use LMS3\Lms3h5p\Controller\ContentEmbedController;
+use LMS3\Lms3h5p\Form\Element\H5PContentElement;
 
-if (!defined('TYPO3_MODE')) {
-    die('Access denied.');
-}
+defined('TYPO3') or die();
 
-
-
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptConstants(
+ExtensionManagementUtility::addTypoScriptConstants(
     "@import 'EXT:lms3h5p/Configuration/TypoScript/constants.typoscript'"
 );
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptSetup(
+ExtensionManagementUtility::addTypoScriptSetup(
     "@import 'EXT:lms3h5p/Configuration/TypoScript/setup.typoscript'"
 );
 
 
-\TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
+ExtensionUtility::configurePlugin(
     'Lms3h5p',
     'Pi1',
     [
-        \LMS3\Lms3h5p\Controller\ContentEmbedController::class => 'index',
+        ContentEmbedController::class => 'index',
     ],
     [
-        \LMS3\Lms3h5p\Controller\ContentEmbedController::class => 'index',
+        ContentEmbedController::class => 'index',
     ]
 );
 
@@ -64,7 +63,7 @@ ExtensionManagementUtility::addPageTSConfig(
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1539019571] = [
     'nodeName' => 'lms3h5pContentElement',
     'priority' => 40,
-    'class' => \LMS3\Lms3h5p\Form\Element\H5PContentElement::class,
+    'class' => H5PContentElement::class,
 ];
 
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['lms3h5p_libraries'] ??= [];

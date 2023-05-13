@@ -32,11 +32,12 @@ use LMS3\Lms3h5p\Service\H5PIntegrationService;
 use LMS3\Lms3h5p\Service\LibraryService;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
-use TYPO3\CMS\Backend\View\BackendTemplateView;
+use TYPO3\CMS\Backend\Template\ModuleTemplate;
+use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Imaging\Icon;
+use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Extbase\Http\ForwardResponse;
-use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
 
 /**
  * Library Controller
@@ -51,49 +52,50 @@ use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
  */
 class LibraryController extends AbstractModuleController
 {
-    protected LibraryService $libraryService;
-    protected H5PIntegrationService $h5pIntegrationService;
+    protected ModuleTemplate $moduleTemplate;
 
-    /**
-     * @var BackendTemplateView
-     */
-    protected $defaultViewObjectName = BackendTemplateView::class;
-
-    public function __construct(LibraryService $libraryService, H5PIntegrationService $h5pIntegrationService)
-    {
-        $this->libraryService = $libraryService;
-        $this->h5pIntegrationService = $h5pIntegrationService;
+    public function __construct(
+        private readonly ModuleTemplateFactory $moduleTemplateFactory,
+        private readonly IconFactory $iconFactory,
+        private readonly LibraryService $libraryService,
+        private readonly H5PIntegrationService $h5pIntegrationService
+    ){
     }
 
-    /**
-     * Index action
-     */
+    public function initializeAction(): void
+    {
+        $this->moduleTemplate = $this->moduleTemplateFactory->create($this->request);
+        $this->moduleTemplate->setFlashMessageQueue($this->getFlashMessageQueue());
+        $actions = ['createAction', 'updateAction', 'deleteAction'];
+
+        if (!in_array($this->actionMethodName, $actions)) {
+            $this->generateMenu($this->moduleTemplate);
+            $this->registerDocheaderButtons();
+        }
+    }
+
     public function indexAction(): ResponseInterface
     {
         $libraries = $this->libraryService->findAll();
 
-        $this->view->assign('libraries', $libraries);
+        $this->moduleTemplate->assign('libraries', $libraries);
 
-        return $this->htmlResponse();
+        return $this->moduleTemplate->renderResponse('Library/Index');
     }
 
-    /**
-     * Show details of library
-     */
     public function showAction(int $library): ResponseInterface
     {
         $library = $this->libraryService->findByUid($library);
 
-        $this->view->assign('library', $library);
-        $this->view->assign('timeFormat', $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm']);
-        $this->view->assign('dateFormat', $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy']);
+        $this->moduleTemplate->assignMultiple([
+            'library' => $library,
+            'timeFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm'],
+            'dateFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy']
+        ]);
 
-        return $this->htmlResponse();
+        return $this->moduleTemplate->renderResponse('Library/Show');
     }
 
-    /**
-     * Delete library
-     */
     public function deleteAction(int $library): ResponseInterface
     {
         $library = $this->libraryService->findByUid($library);
@@ -111,9 +113,6 @@ class LibraryController extends AbstractModuleController
         return new ForwardResponse('index');
     }
 
-    /**
-     * Refresh content type cache
-     */
     public function refreshContentTypeCacheAction(): ResponseInterface
     {
         $h5pCoreInstance = $this->h5pIntegrationService->getH5PCoreInstance();
@@ -129,28 +128,19 @@ class LibraryController extends AbstractModuleController
         return new ForwardResponse('index');
     }
 
-    /**
-     * Registers the Icons into the docheader
-     *
-     * @throws \InvalidArgumentException
-     */
     protected function registerDocheaderButtons(): void
     {
-        $buttonBar = $this->view->getModuleTemplate()->getDocHeaderComponent()->getButtonBar();
-
-        $uriBuilder = $this->controllerContext->getUriBuilder();
+        $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
         if ('indexAction' !== $this->actionMethodName) {
-            $uri = $uriBuilder->reset()->uriFor('index');
+            $uri = $this->uriBuilder->uriFor('index', null);
             $title = $this->translate('back');
-            $icon = $this->view->getModuleTemplate()
-                ->getIconFactory()
+            $icon = $this->iconFactory
                 ->getIcon('actions-view-go-back', Icon::SIZE_SMALL);
         } else {
-            $uri = $uriBuilder->reset()->uriFor('new', [], 'Content');
+            $uri = $this->uriBuilder->uriFor('new', null, 'Content');
             $title = $this->translate('createNewContent');
-            $icon = $this->view->getModuleTemplate()
-                ->getIconFactory()
+            $icon = $this->iconFactory
                 ->getIcon('actions-document-new', Icon::SIZE_SMALL);
         }
 
@@ -158,21 +148,7 @@ class LibraryController extends AbstractModuleController
             ->setHref($uri)
             ->setTitle($title)
             ->setIcon($icon);
+
         $buttonBar->addButton($button, ButtonBar::BUTTON_POSITION_LEFT);
-    }
-
-    /**
-     * Initializes the view before invoking an action method.
-     */
-    protected function initializeView(ViewInterface $view): void
-    {
-        parent::initializeView($view);
-
-        $actionsExcludeMenu = ['refreshContentTypeCacheAction', 'deleteAction'];
-
-        if (!in_array($this->actionMethodName, $actionsExcludeMenu)) {
-            $this->generateMenu();
-            $this->registerDocheaderButtons();
-        }
     }
 }

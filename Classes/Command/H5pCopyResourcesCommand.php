@@ -21,13 +21,9 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class H5pCopyResourcesCommand extends Command
 {
-    private Setup $setup;
-
-    public function __construct(Setup $setup)
+    public function __construct(private readonly Setup $setup)
     {
         parent::__construct();
-
-        $this->setup = $setup;
     }
 
     public function configure(): void
@@ -44,7 +40,7 @@ class H5pCopyResourcesCommand extends Command
     {
         try {
             $this->setup->copyResourcesFromH5PLibraries();
-        } catch (\Exception $exception) {
+        } catch (\Exception) {
             return Command::FAILURE;
         }
 

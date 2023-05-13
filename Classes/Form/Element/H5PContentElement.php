@@ -31,7 +31,6 @@ namespace LMS3\Lms3h5p\Form\Element;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use LMS3\Lms3h5p\Domain\Model\Content;
 use LMS3\Lms3h5p\Domain\Repository\ContentRepository;
-use LMS3\Lms3h5p\Traits\ObjectManageable;
 use TYPO3\CMS\Backend\Form\Element\AbstractFormElement;
 
 /**
@@ -47,8 +46,6 @@ use TYPO3\CMS\Backend\Form\Element\AbstractFormElement;
  */
 class H5PContentElement extends AbstractFormElement
 {
-    use ObjectManageable;
-
     /**
      * Handler for single nodes
      *
