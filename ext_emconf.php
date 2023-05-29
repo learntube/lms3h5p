@@ -9,10 +9,10 @@ $EM_CONF['lms3h5p'] = [
     'author_company' => 'LEARNTUBE! GmbH',
     'state' => 'beta',
     'clearCacheOnLoad' => true,
-    'version' => '2.0.0',
+    'version' => '3.0.0',
     'constraints' => [
         'depends' => [
-            'typo3' => '10.0.0-11.5.99',
+            'typo3' => '12.0.0-12.99.99',
         ],
     ],
 ];
