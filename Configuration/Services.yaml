@@ -30,3 +30,8 @@ services:
     tags:
       - name: 'console.command'
         command: 'h5p:copyresources'
+
+  LMS3\Lms3h5p\Command\H5pRepairLibraryCommand:
+    tags:
+      - name: 'console.command'
+        command: 'h5p:repairLibrary'
