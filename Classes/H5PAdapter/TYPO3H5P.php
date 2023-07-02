@@ -104,6 +104,11 @@ class TYPO3H5P
 
     protected function getLanguage(): string
     {
-        return $GLOBALS['BE_USER']->uc['lang'] ?? 'en';
+        $language = $GLOBALS['BE_USER']->uc['lang'];
+        if (empty($language) || $language === 'default') {
+            $language = 'en';
+        }
+
+        return $language;
     }
 }

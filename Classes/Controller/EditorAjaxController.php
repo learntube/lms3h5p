@@ -103,7 +103,7 @@ class EditorAjaxController extends ActionController
         }
 
         $language = $GLOBALS['BE_USER']->uc['lang'];
-        if ($language === null || $language === 'default') {
+        if (empty($language) || $language === 'default') {
             $language = 'en';
         }
 
