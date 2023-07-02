@@ -42,12 +42,12 @@ namespace LMS3\Lms3h5p\Domain\Model;
 class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
 {
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\Library
+     * @var Library
      */
     protected $library;
 
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\BackendUser
+     * @var BackendUser
      */
     protected $account;
 
@@ -180,7 +180,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @return \LMS3\Lms3h5p\Domain\Model\BackendUser|null
+     * @return BackendUser|null
      */
     public function getAccount(): ?BackendUser
     {
@@ -238,7 +238,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getTitle(): string
     {
-        return $this->title;
+        return (string)$this->title;
     }
 
     /**
@@ -256,7 +256,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getParameters(): string
     {
-        return $this->parameters;
+        return (string)$this->parameters;
     }
 
     /**
@@ -274,7 +274,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getFiltered(): string
     {
-        return $this->filtered;
+        return (string)$this->filtered;
     }
 
     /**
@@ -310,7 +310,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getEmbedType(): string
     {
-        return $this->embedType;
+        return (string)$this->embedType;
     }
 
     /**
@@ -346,7 +346,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getContentType(): string
     {
-        return $this->contentType;
+        return (string)$this->contentType;
     }
 
     /**
@@ -364,7 +364,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getAuthor(): string
     {
-        return $this->author;
+        return (string)$this->author;
     }
 
     /**
@@ -400,7 +400,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getKeywords(): string
     {
-        return $this->keywords;
+        return (string)$this->keywords;
     }
 
     /**
@@ -418,7 +418,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getDescription(): string
     {
-        return $this->description;
+        return (string)$this->description;
     }
 
     /**
@@ -436,7 +436,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getZippedContentFile(): string
     {
-        return $this->zippedContentFile;
+        return (string)$this->zippedContentFile;
     }
 
     /**
@@ -454,7 +454,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getExportFile(): string
     {
-        return $this->exportFile;
+        return (string)$this->exportFile;
     }
 
     /**
@@ -580,7 +580,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getChanges(): string
     {
-        return $this->changes;
+        return (string)$this->changes;
     }
 
     /**

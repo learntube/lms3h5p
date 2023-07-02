@@ -27,31 +27,12 @@
 
 use \TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 
-if (!defined('TYPO3_MODE')) {
-    die('Access denied.');
-}
+defined('TYPO3') or die();
 
 ExtensionUtility::registerPlugin(
     'Lms3h5p',
     'Pi1',
     'LLL:EXT:lms3h5p/Resources/Private/Language/locallang.xlf:tx_lms3h5p_domain_model_pi1'
-);
-
-\TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerModule(
-    'Lms3h5p',
-    'web',
-    'Content',
-    'after:page',
-    [
-        \LMS3\Lms3h5p\Controller\ContentController::class => 'index, create, new, show, edit, update, delete',
-        \LMS3\Lms3h5p\Controller\EditorAjaxController::class => 'index',
-        \LMS3\Lms3h5p\Controller\LibraryController::class => 'index, show, delete, refreshContentTypeCache'
-    ],
-    [
-        'access' => 'user,group',
-        'icon' => 'EXT:lms3h5p/Resources/Public/Icons/lms3h5p.svg',
-        'labels' => 'LLL:EXT:lms3h5p/Resources/Private/Language/locallang_mod.xlf',
-    ]
 );
 
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addStaticFile(

@@ -43,27 +43,8 @@ use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
  */
 class Setting extends AbstractEntity
 {
-    /**
-     * @var string
-     */
-    protected $configKey;
-
-    /**
-     * @var string
-     */
-    protected $configValue;
-
-    /**
-     * Setting constructor.
-     *
-     * @param string $key
-     * @param string $value
-     */
-    public function __construct(string $key, string $value)
-    {
-        $this->configKey = $key;
-        $this->configValue = $value;
-    }
+    protected string $configKey;
+    protected string $configValue;
 
     /**
      * @return string

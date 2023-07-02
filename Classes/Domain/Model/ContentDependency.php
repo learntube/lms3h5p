@@ -44,12 +44,12 @@ use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
 class ContentDependency extends AbstractEntity
 {
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\Content
+     * @var Content
      */
     protected $content;
 
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\Library
+     * @var Library
      */
     protected $library;
 

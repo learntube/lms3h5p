@@ -27,6 +27,7 @@ namespace LMS3\Lms3h5p\Controller;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use LMS3\Lms3h5p\Service\H5PIntegrationService;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
@@ -44,18 +45,13 @@ use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
  */
 class EditorAjaxController extends ActionController
 {
-    /**
-     * @var \LMS3\Lms3h5p\Service\H5PIntegrationService
-     * @TYPO3\CMS\Extbase\Annotation\Inject
-     */
-    protected $h5pIntegrationService;
+    public function __construct(private readonly H5PIntegrationService $h5pIntegrationService)
+    {
+    }
 
-    /**
-     * Handle different types of request
-     */
     public function indexAction()
     {
-        $type = GeneralUtility::_GP('type');
+        $type = GeneralUtility::_GET('type');
         switch ($type) {
             case \H5PEditorEndpoints::CONTENT_TYPE_CACHE:
                 $this->contentTypeCache();
@@ -80,11 +76,6 @@ class EditorAjaxController extends ActionController
         exit;
     }
 
-    /**
-     * Content type cache
-     *
-     * @return void
-     */
     protected function contentTypeCache(): void
     {
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
@@ -92,40 +83,35 @@ class EditorAjaxController extends ActionController
         );
     }
 
-    /**
-     * Install library
-     *
-     * @return void
-     */
     protected function installLibrary(): void
     {
-        $id = GeneralUtility::_GP('id');
+        $id = GeneralUtility::_GET('id');
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             \H5PEditorEndpoints::LIBRARY_INSTALL,
-            GeneralUtility::_GP('moduleToken'),
+            GeneralUtility::_GET('moduleToken'),
             $id
         );
     }
 
-    /**
-     * Libraries
-     *
-     * @return void
-     */
     protected function libraries(): void
     {
-        if (GeneralUtility::_GP('libraries')) {
+        if ($this->request->hasArgument('libraries')) {
             $this->h5pIntegrationService->getH5pEditor()->ajax->action(
                 \H5PEditorEndpoints::LIBRARIES
             );
             exit;
         }
-        $language = $GLOBALS['BE_USER']->uc['lang'] ?? 'en';
+
+        $language = $GLOBALS['BE_USER']->uc['lang'];
+        if (empty($language) || $language === 'default') {
+            $language = 'en';
+        }
+
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             \H5PEditorEndpoints::SINGLE_LIBRARY,
-            GeneralUtility::_GP('machineName'),
-            GeneralUtility::_GP('majorVersion'),
-            GeneralUtility::_GP('minorVersion'),
+            GeneralUtility::_GET('machineName'),
+            GeneralUtility::_GET('majorVersion'),
+            GeneralUtility::_GET('minorVersion'),
             $language,
             '',
             Environment::getPublicPath() . $this->h5pIntegrationService->getSettings()['h5pPublicFolder']['path'],
@@ -133,11 +119,6 @@ class EditorAjaxController extends ActionController
         );
     }
 
-    /**
-     * Upload files
-     *
-     * @return void
-     */
     protected function uploadFiles(): void
     {
         $h5pCore = $this->h5pIntegrationService->getH5PCoreInstance();
@@ -154,28 +135,22 @@ class EditorAjaxController extends ActionController
         $file->printResult();
     }
 
-    /**
-     * Upload library
-     *
-     * @return void
-     */
     protected function uploadLibrary(): void
     {
-        $contentId = GeneralUtility::_GP('contentId') ?? 0;
+        $contentId = GeneralUtility::_GET('contentId') ?? 0;
+
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             \H5PEditorEndpoints::LIBRARY_UPLOAD,
-            GeneralUtility::_GP('moduleToken'),
+            GeneralUtility::_GET('moduleToken'),
             $_FILES['h5p']['tmp_name'],
             $contentId
         );
     }
 
-    /**
-     * Get translations
-     */
     protected function translations(): void
     {
-        $language = GeneralUtility::_GP('language');
+        $language = GeneralUtility::_GET('language');
+
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             \H5PEditorEndpoints::TRANSLATIONS,
             $language

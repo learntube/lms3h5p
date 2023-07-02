@@ -28,6 +28,7 @@ namespace LMS3\Lms3h5p\Domain\Repository;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\CMS\Extbase\Persistence\Repository;
 
 /**
@@ -43,14 +44,7 @@ use TYPO3\CMS\Extbase\Persistence\Repository;
  */
 class ContentDependencyRepository extends Repository
 {
-    /**
-     * Find records by condition
-     *
-     * @param array $criteria
-     * @param array $ordering
-     * @return array|\TYPO3\CMS\Extbase\Persistence\QueryResultInterface
-     */
-    public function findByConditions(array $criteria, array $ordering = [])
+    public function findByConditions(array $criteria, array $ordering = []): array|QueryResultInterface
     {
         $query = $this->createQuery();
         if (!empty($ordering)) {
@@ -63,6 +57,7 @@ class ContentDependencyRepository extends Repository
         foreach ($criteria as $key => $value) {
             $conditions[] = $query->equals($key, $value);
         }
-        return $query->matching($query->logicalAnd($conditions))->execute();
+
+        return $query->matching($query->logicalAnd(...$conditions))->execute();
     }
 }

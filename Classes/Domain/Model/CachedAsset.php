@@ -44,22 +44,22 @@ use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
 class CachedAsset extends AbstractEntity
 {
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\Library
+     * @var Library
      */
-    protected $library;
+    protected Library $library;
 
     /**
      * @var string
      */
-    protected $hashKey;
+    protected string $hashKey;
 
     /**
      * @var string
      */
-    protected $type;
+    protected string $type;
 
     /**
-     * @return \LMS3\Lms3h5p\Domain\Model\Library
+     * @return Library
      */
     public function getLibrary(): Library
     {
@@ -67,7 +67,7 @@ class CachedAsset extends AbstractEntity
     }
 
     /**
-     * @param \LMS3\Lms3h5p\Domain\Model\Library $library
+     * @param Library $library
      * @return CachedAsset
      */
     public function setLibrary(Library $library): self

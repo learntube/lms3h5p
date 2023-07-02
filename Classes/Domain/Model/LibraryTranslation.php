@@ -42,7 +42,7 @@ namespace LMS3\Lms3h5p\Domain\Model;
 class LibraryTranslation extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
 {
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\Library
+     * @var Library
      */
     protected $library;
 
@@ -113,7 +113,7 @@ class LibraryTranslation extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     /**
      * Create library translation
      *
-     * @param \LMS3\Lms3h5p\Domain\Model\Library $library
+     * @param Library $library
      * @param string $languageCode
      * @param string $translation
      * @return LibraryTranslation

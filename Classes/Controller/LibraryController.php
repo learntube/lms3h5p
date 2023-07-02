@@ -28,11 +28,16 @@ namespace LMS3\Lms3h5p\Controller;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use LMS3\Lms3h5p\Service\H5PIntegrationService;
+use LMS3\Lms3h5p\Service\LibraryService;
+use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
-use TYPO3\CMS\Backend\View\BackendTemplateView;
+use TYPO3\CMS\Backend\Template\ModuleTemplate;
+use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Imaging\Icon;
+use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Messaging\AbstractMessage;
-use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
+use TYPO3\CMS\Extbase\Http\ForwardResponse;
 
 /**
  * Library Controller
@@ -47,80 +52,54 @@ use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
  */
 class LibraryController extends AbstractModuleController
 {
-    /**
-     * @var BackendTemplateView
-     */
-    protected $defaultViewObjectName = BackendTemplateView::class;
+    protected ModuleTemplate $moduleTemplate;
 
-    /**
-     * @var BackendTemplateView
-     */
-    protected $view;
+    public function __construct(
+        private readonly ModuleTemplateFactory $moduleTemplateFactory,
+        private readonly IconFactory $iconFactory,
+        private readonly LibraryService $libraryService,
+        private readonly H5PIntegrationService $h5pIntegrationService
+    ){
+    }
 
-    /**
-     * @var \LMS3\Lms3h5p\Service\H5PIntegrationService
-     * @TYPO3\CMS\Extbase\Annotation\Inject
-     */
-    protected $h5pIntegrationService;
-
-    /**
-     * @var \LMS3\Lms3h5p\Service\LibraryService
-     * @TYPO3\CMS\Extbase\Annotation\Inject
-     */
-    protected $libraryService;
-
-    /**
-     * Initializes the view before invoking an action method.
-     *
-     * @param ViewInterface $view The view to be initialized
-     * @return void
-     */
-    protected function initializeView(ViewInterface $view): void
+    public function initializeAction(): void
     {
-        /** @var BackendTemplateView $view */
-        parent::initializeView($view);
-        $actionsExcludeMenu = ['refreshContentTypeCacheAction', 'deleteAction'];
-        if (!in_array($this->actionMethodName, $actionsExcludeMenu)) {
-            $this->generateMenu();
+        $this->moduleTemplate = $this->moduleTemplateFactory->create($this->request);
+        $this->moduleTemplate->setFlashMessageQueue($this->getFlashMessageQueue());
+        $actions = ['createAction', 'updateAction', 'deleteAction'];
+
+        if (!in_array($this->actionMethodName, $actions)) {
+            $this->generateMenu($this->moduleTemplate);
             $this->registerDocheaderButtons();
         }
     }
 
-    /**
-     * Index action
-     *
-     * @return void
-     */
-    public function indexAction(): void
+    public function indexAction(): ResponseInterface
     {
         $libraries = $this->libraryService->findAll();
-        $this->view->assign('libraries', $libraries);
+
+        $this->moduleTemplate->assign('libraries', $libraries);
+
+        return $this->moduleTemplate->renderResponse('Library/Index');
     }
 
-    /**
-     * Show details of library
-     *
-     * @param int $library
-     * @return void
-     */
-    public function showAction($library): void
+    public function showAction(int $library): ResponseInterface
     {
         $library = $this->libraryService->findByUid($library);
-        $this->view->assign('library', $library);
-        $this->view->assign('dateFormat', $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy']);
-        $this->view->assign('timeFormat', $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm']);
+
+        $this->moduleTemplate->assignMultiple([
+            'library' => $library,
+            'timeFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm'],
+            'dateFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy']
+        ]);
+
+        return $this->moduleTemplate->renderResponse('Library/Show');
     }
 
-    /**
-     * Delete library
-     *
-     * @param int $library
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\StopActionException
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\UnsupportedRequestTypeException
-     */
-    public function deleteAction($library): void
+    public function deleteAction(int $library): ResponseInterface
     {
         $library = $this->libraryService->findByUid($library);
+
         $this->h5pIntegrationService->getH5PCoreInstance()->deleteLibrary($library->toStdClass());
 
         $this->addFlashMessage(
@@ -128,20 +107,13 @@ class LibraryController extends AbstractModuleController
                 $this->translate('libraryDeletedMessage'),
                 $library->getTitle()
             ),
-            $this->translate('libraryDeleted'),
-            AbstractMessage::OK
+            $this->translate('libraryDeleted')
         );
-        $this->redirect('index');
+
+        return new ForwardResponse('index');
     }
 
-    /**
-     * Refresh content type cache
-     *
-     * @return void
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\StopActionException
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\UnsupportedRequestTypeException
-     */
-    public function refreshContentTypeCacheAction(): void
+    public function refreshContentTypeCacheAction(): ResponseInterface
     {
         $h5pCoreInstance = $this->h5pIntegrationService->getH5PCoreInstance();
         if (false === $h5pCoreInstance->updateContentTypeCache()) {
@@ -152,44 +124,31 @@ class LibraryController extends AbstractModuleController
             );
         }
         $this->addFlashMessage($this->translate('contentTypeCachedRefreshedMessage'));
-        $this->redirect('index');
+
+        return new ForwardResponse('index');
     }
 
-    /**
-     * Registers the Icons into the docheader
-     *
-     * @return void
-     * @throws \InvalidArgumentException
-     */
     protected function registerDocheaderButtons(): void
     {
-        /** @var ButtonBar $buttonBar */
-        $buttonBar = $this->view->getModuleTemplate()->getDocHeaderComponent()->getButtonBar();
-
-        $uriBuilder = $this->controllerContext->getUriBuilder();
+        $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
         if ('indexAction' !== $this->actionMethodName) {
-            $uri = $uriBuilder->reset()->uriFor('index');
+            $uri = $this->uriBuilder->uriFor('index', null);
             $title = $this->translate('back');
-            $icon = $this->view->getModuleTemplate()
-                ->getIconFactory()
+            $icon = $this->iconFactory
                 ->getIcon('actions-view-go-back', Icon::SIZE_SMALL);
-            $button = $buttonBar->makeLinkButton()
-                ->setHref($uri)
-                ->setTitle($title)
-                ->setIcon($icon);
-            $buttonBar->addButton($button, ButtonBar::BUTTON_POSITION_LEFT);
         } else {
-            $uri = $uriBuilder->reset()->uriFor('new', [], 'Content');
+            $uri = $this->uriBuilder->uriFor('new', null, 'Content');
             $title = $this->translate('createNewContent');
-            $icon = $this->view->getModuleTemplate()
-                ->getIconFactory()
+            $icon = $this->iconFactory
                 ->getIcon('actions-document-new', Icon::SIZE_SMALL);
-            $button = $buttonBar->makeLinkButton()
-                ->setHref($uri)
-                ->setTitle($title)
-                ->setIcon($icon);
-            $buttonBar->addButton($button, ButtonBar::BUTTON_POSITION_LEFT);
         }
+
+        $button = $buttonBar->makeLinkButton()
+            ->setHref($uri)
+            ->setTitle($title)
+            ->setIcon($icon);
+
+        $buttonBar->addButton($button, ButtonBar::BUTTON_POSITION_LEFT);
     }
 }

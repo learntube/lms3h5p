@@ -44,12 +44,12 @@ use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
 class LibraryDependency extends AbstractEntity
 {
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\Library
+     * @var Library
      */
     protected $library;
 
     /**
-     * @var \LMS3\Lms3h5p\Domain\Model\Library
+     * @var Library
      */
     protected $requiredLibrary;
 
@@ -57,20 +57,6 @@ class LibraryDependency extends AbstractEntity
      * @var string
      */
     protected $dependencyType;
-
-    /**
-     * LibraryDependency constructor.
-     *
-     * @param \LMS3\Lms3h5p\Domain\Model\Library $library
-     * @param \LMS3\Lms3h5p\Domain\Model\Library $requiredLibrary
-     * @param string $dependencyType
-     */
-    public function __construct(Library $library, Library $requiredLibrary, string $dependencyType)
-    {
-        $this->library = $library;
-        $this->requiredLibrary = $requiredLibrary;
-        $this->dependencyType = $dependencyType;
-    }
 
     /**
      * @return Library

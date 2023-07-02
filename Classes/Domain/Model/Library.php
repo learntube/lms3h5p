@@ -31,7 +31,8 @@ namespace LMS3\Lms3h5p\Domain\Model;
 use LMS3\Lms3h5p\Domain\Repository\ContentDependencyRepository;
 use LMS3\Lms3h5p\Domain\Repository\ContentRepository;
 use LMS3\Lms3h5p\Domain\Repository\LibraryDependencyRepository;
-use LMS3\Lms3h5p\Traits\ObjectManageable;
+use TYPO3\CMS\Core\Http\ApplicationType;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
 
 /**
@@ -47,8 +48,6 @@ use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
  */
 class Library extends AbstractEntity
 {
-    use ObjectManageable;
-
     /**
      * @var string
      */
@@ -617,14 +616,16 @@ class Library extends AbstractEntity
             'metadataSettings' => $this->getMetaDataSettings()
         ];
 
-        $dependencies = $this->getLibraryDependencies();
-        /** @var LibraryDependency $dependency */
-        foreach ($dependencies as $dependency) {
-            $libraryArray[$dependency->getDependencyType() . 'Dependencies'][] = [
-                'machineName' => $dependency->getRequiredLibrary()->getName(),
-                'majorVersion' => $dependency->getRequiredLibrary()->getMajorVersion(),
-                'minorVersion' => $dependency->getRequiredLibrary()->getMinorVersion()
-            ];
+        if (ApplicationType::fromRequest($GLOBALS['TYPO3_REQUEST'])->isBackend()) {
+            $dependencies = $this->getLibraryDependencies();
+            /** @var LibraryDependency $dependency */
+            foreach ($dependencies as $dependency) {
+                $libraryArray[$dependency->getDependencyType() . 'Dependencies'][] = [
+                    'machineName' => $dependency->getRequiredLibrary()->getName(),
+                    'majorVersion' => $dependency->getRequiredLibrary()->getMajorVersion(),
+                    'minorVersion' => $dependency->getRequiredLibrary()->getMinorVersion()
+                ];
+            }
         }
 
         return $libraryArray;
@@ -636,7 +637,7 @@ class Library extends AbstractEntity
     public function getContents()
     {
         /** @var ContentRepository $contentRepository */
-        $contentRepository = $this->createObject(ContentRepository::class);
+        $contentRepository = GeneralUtility::makeInstance(ContentRepository::class);
         $contentRepository->setDefaultQuerySettings(
             $contentRepository->createQuery()->getQuerySettings()->setRespectStoragePage(false)
         );
@@ -649,7 +650,7 @@ class Library extends AbstractEntity
      */
     public function getLibraryDependencies()
     {
-        $dependencyRepository = $this->createObject(LibraryDependencyRepository::class);
+        $dependencyRepository = GeneralUtility::makeInstance(LibraryDependencyRepository::class);
         $dependencyRepository->setDefaultQuerySettings(
             $dependencyRepository->createQuery()->getQuerySettings()->setRespectStoragePage(false)
         );
@@ -662,7 +663,7 @@ class Library extends AbstractEntity
      */
     public function getDependentLibraries()
     {
-        $dependencyRepository = $this->createObject(LibraryDependencyRepository::class);
+        $dependencyRepository = GeneralUtility::makeInstance(LibraryDependencyRepository::class);
         $dependencyRepository->setDefaultQuerySettings(
             $dependencyRepository->createQuery()->getQuerySettings()->setRespectStoragePage(false)
         );
@@ -675,7 +676,7 @@ class Library extends AbstractEntity
      */
     public function getContentDependencies()
     {
-        $contentDependencyRepository = $this->createObject(ContentDependencyRepository::class);
+        $contentDependencyRepository = GeneralUtility::makeInstance(ContentDependencyRepository::class);
         $contentDependencyRepository->setDefaultQuerySettings(
             $contentDependencyRepository->createQuery()->getQuerySettings()->setRespectStoragePage(false)
         );

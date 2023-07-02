@@ -28,9 +28,9 @@ namespace LMS3\Lms3h5p\Form\Element;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use LMS3\Lms3h5p\Domain\Model\Content;
 use LMS3\Lms3h5p\Domain\Repository\ContentRepository;
-use LMS3\Lms3h5p\Traits\ObjectManageable;
 use TYPO3\CMS\Backend\Form\Element\AbstractFormElement;
 
 /**
@@ -46,8 +46,6 @@ use TYPO3\CMS\Backend\Form\Element\AbstractFormElement;
  */
 class H5PContentElement extends AbstractFormElement
 {
-    use ObjectManageable;
-
     /**
      * Handler for single nodes
      *
@@ -61,7 +59,7 @@ class H5PContentElement extends AbstractFormElement
         $result = $this->initializeResultArray();
 
         /** @var ContentRepository $contentRepository */
-        $contentRepository = ObjectManageable::createObject(ContentRepository::class);
+        $contentRepository = GeneralUtility::makeInstance(ContentRepository::class);
         $contentRepository->setDefaultQuerySettings(
             $contentRepository->createQuery()->getQuerySettings()->setRespectStoragePage(false)
         );

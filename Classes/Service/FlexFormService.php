@@ -15,6 +15,8 @@ namespace LMS3\Lms3h5p\Service;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+
 /**
  * Utilities to process flexForms
  */
@@ -35,7 +37,7 @@ class FlexFormService implements \TYPO3\CMS\Core\SingletonInterface
     public function convertFlexFormContentToArray($flexFormContent, $languagePointer = 'lDEF', $valuePointer = 'vDEF')
     {
         $settings = [];
-        $flexFormArray = \TYPO3\CMS\Core\Utility\GeneralUtility::xml2array($flexFormContent);
+        $flexFormArray = GeneralUtility::xml2array($flexFormContent);
         $flexFormArray = $flexFormArray['data'] ?? [];
         foreach (array_values($flexFormArray) as $languages) {
             if (!is_array($languages[$languagePointer])) {
@@ -62,6 +64,7 @@ class FlexFormService implements \TYPO3\CMS\Core\SingletonInterface
                 }
             }
         }
+
         return $settings;
     }
 
