@@ -129,7 +129,7 @@ class EditorAjaxController extends ActionController
             GeneralUtility::_GP('minorVersion'),
             $language,
             '',
-            Environment::getPublicPath() . $this->h5pIntegrationService->getSettings()['h5pPublicFolder']['path'],
+            Environment::getProjectPath() . $this->h5pIntegrationService->getSettings()['h5pPublicFolder']['path'],
             'en'
         );
     }

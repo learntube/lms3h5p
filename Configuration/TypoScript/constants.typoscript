@@ -46,7 +46,7 @@ module.tx_lms3h5p {
 
         h5pPublicFolder {
             url = /fileadmin/h5p/
-            path = /fileadmin/h5p/
+            path = /public/fileadmin/h5p/
         }
         subFolders {
             content = content

@@ -66,7 +66,7 @@ class Setup
             return;
         }
 
-        $h5pLibraryPath = dirname(Environment::getPublicPath()) . $this->ts['libraryPath'];
+        $h5pLibraryPath = Environment::getProjectPath() . $this->ts['libraryPath'];
 
         if (!is_dir($h5pLibraryPath)) {
             return;
@@ -75,7 +75,7 @@ class Setup
         $coreSubfolders = ['fonts', 'images', 'js', 'styles'];
         $editorSubfolders = ['ckeditor', 'images', 'language', 'libs', 'scripts', 'styles'];
 
-        $destinationBasePath = Environment::getPublicPath() . $this->ts['h5pPublicFolder']['path'];
+        $destinationBasePath = Environment::getProjectPath() . $this->ts['h5pPublicFolder']['path'];
 
         $destinationH5pCorePath = $destinationBasePath . $this->ts['subFolders']['core'];
         $destinationH5pEditorPath = $destinationBasePath . $this->ts['subFolders']['editor'];

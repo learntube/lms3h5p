@@ -271,8 +271,8 @@ class FileAdapter implements \H5PFileStorage
             foreach ($assets as $asset) {
                 // Get content from asset file
                 $assetContent = '';
-                if (file_exists(Environment::getPublicPath() . DIRECTORY_SEPARATOR . $asset->path)) {
-                    $assetContent = file_get_contents(Environment::getPublicPath() . DIRECTORY_SEPARATOR . $asset->path);
+                if (file_exists(Environment::getProjectPath() . DIRECTORY_SEPARATOR . $asset->path)) {
+                    $assetContent = file_get_contents(Environment::getProjectPath() . DIRECTORY_SEPARATOR . $asset->path);
                 }
                 $cssRelPath = preg_replace('/[^\/]+$/', '', $asset->path);
 
@@ -410,7 +410,7 @@ class FileAdapter implements \H5PFileStorage
         $editorTempfileRepository = $this->createObject(EditorTempfileRepository::class);
         $persistenceManager = $this->createObject(PersistenceManager::class);
         $editotTempFile = new EditorTempFile();
-        $editotTempFile->setPath(ltrim($path, Environment::getPublicPath()));
+        $editotTempFile->setPath(ltrim($path, Environment::getProjectPath()));
         $editotTempFile->setCreatedAt(time());
         $editorTempfileRepository->add($editotTempFile);
         $persistenceManager->persistAll();
@@ -535,7 +535,7 @@ class FileAdapter implements \H5PFileStorage
      */
     public function hasWriteAccess()
     {
-        $h5pPublicFolder = Environment::getPublicPath() . $this->h5pSettings['h5pPublicFolder']['path'];
+        $h5pPublicFolder = Environment::getProjectPath() . $this->h5pSettings['h5pPublicFolder']['path'];
 
         return self::dirReady($h5pPublicFolder);
     }
@@ -657,7 +657,7 @@ class FileAdapter implements \H5PFileStorage
             return $this->h5pSettings['h5pPublicFolder']['path'] . $this->h5pSettings['subFolders'][$folderName] . DIRECTORY_SEPARATOR;
         }
 
-        return Environment::getPublicPath() . $this->h5pSettings['h5pPublicFolder']['path'] . $this->h5pSettings['subFolders'][$folderName] . DIRECTORY_SEPARATOR;
+        return Environment::getProjectPath() . $this->h5pSettings['h5pPublicFolder']['path'] . $this->h5pSettings['subFolders'][$folderName] . DIRECTORY_SEPARATOR;
     }
 
     /**
@@ -673,7 +673,7 @@ class FileAdapter implements \H5PFileStorage
             return $this->h5pSettings['h5pPublicFolder']['url'] . $this->h5pSettings['subFolders'][$folderName] . DIRECTORY_SEPARATOR;
         }
 
-        return Environment::getPublicPath() . $this->h5pSettings['h5pPublicFolder']['url'] . $this->h5pSettings['subFolders'][$folderName] . DIRECTORY_SEPARATOR;
+        return Environment::getProjectPath() . $this->h5pSettings['h5pPublicFolder']['url'] . $this->h5pSettings['subFolders'][$folderName] . DIRECTORY_SEPARATOR;
     }
 
     /**
@@ -703,7 +703,7 @@ class FileAdapter implements \H5PFileStorage
         $upgradeScript = "{$machineName}-{$majorVersion}.{$minorVersion}/upgrades.js";
         $upgradesFilePath = $this->getFolderPath('libraries', false) . $upgradeScript;
 
-        if (file_exists(Environment::getPublicPath() . $upgradesFilePath)) {
+        if (file_exists(Environment::getProjectPath() . $upgradesFilePath)) {
             return 'libraries/' . $upgradeScript;
         } else {
             return NULL;
