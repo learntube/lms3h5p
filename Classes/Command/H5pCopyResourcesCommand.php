@@ -1,9 +1,11 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Command;
 
 use LMS3\Lms3h5p\Setup;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,6 +22,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
  */
+#[AsCommand('h5p:copyresources')]
 class H5pCopyResourcesCommand extends Command
 {
     public function __construct(private readonly Setup $setup)
@@ -27,7 +30,7 @@ class H5pCopyResourcesCommand extends Command
         parent::__construct();
     }
 
-    public function configure(): void
+    protected function configure(): void
     {
         $this->setDescription('Copy required H5P core and editor resources from vendor packages to fileadmin.');
     }
@@ -35,7 +38,7 @@ class H5pCopyResourcesCommand extends Command
     /**
      * Copy required resources from h5p vendor packages
      */
-    public function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
 

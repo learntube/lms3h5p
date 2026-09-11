@@ -30,6 +30,8 @@ use LMS3\Lms3h5p\Form\Element\H5PContentElement;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 
+defined('TYPO3') or die();
+
 ExtensionManagementUtility::addTypoScriptConstants(
     "@import 'EXT:lms3h5p/Configuration/TypoScript/constants.typoscript'"
 );

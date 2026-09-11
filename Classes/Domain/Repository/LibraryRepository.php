@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Domain\Repository;
 
@@ -30,7 +31,9 @@ namespace LMS3\Lms3h5p\Domain\Repository;
 
 use LMS3\Lms3h5p\Domain\Model\Library;
 use TYPO3\CMS\Extbase\Persistence\Exception\InvalidQueryException;
+use TYPO3\CMS\Extbase\Persistence\Generic\Query;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
+use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\CMS\Extbase\Persistence\Repository;
 
 /**
@@ -43,28 +46,26 @@ use TYPO3\CMS\Extbase\Persistence\Repository;
  * Please visit: https://h5p.org/MIT-licensed
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
+ *
+ * @extends Repository<Library>
  */
 class LibraryRepository extends Repository
 {
-    const LIBRARY_TABLE_NAME = 'tx_lms3h5p_domain_model_library';
+    public const string LIBRARY_TABLE_NAME = 'tx_lms3h5p_domain_model_library';
 
-    /**
-     * @var array
-     */
     protected $defaultOrderings = [
         'name' => QueryInterface::ORDER_DESCENDING,
         'majorVersion' => QueryInterface::ORDER_DESCENDING,
-        'minorVersion' => QueryInterface::ORDER_DESCENDING
+        'minorVersion' => QueryInterface::ORDER_DESCENDING,
     ];
 
     /**
      * Find latest library versions
      *
-     * @return array
+     * @return array[]
      */
     public function findLatestLibraryVersions(): array
     {
-        $query = $this->createQuery();
         $tableName = self::LIBRARY_TABLE_NAME;
         $majorVersionSql = "SELECT lib1.name, MAX(lib1.major_version) AS major_version
             FROM  {$tableName} lib1
@@ -84,6 +85,8 @@ class LibraryRepository extends Repository
             AND lib3.major_version = lib4.major_version
             AND lib3.minor_version = lib4.minor_version";
 
+        /** @var Query<Library> $query */
+        $query = $this->createQuery();
         $query->statement($finalSql);
 
         return $query->execute(true);
@@ -115,7 +118,6 @@ class LibraryRepository extends Repository
         return $query->execute()->count() === 1;
     }
 
-
     /**
      * Check if is patched library
      *
@@ -128,31 +130,24 @@ class LibraryRepository extends Repository
             $query = $this->createQuery();
             $conditions = [];
             foreach ($criteria as $key => $value) {
-                if ('patchVersion' === $key) {
+                if ($key === 'patchVersion') {
                     $conditions[] = $query->lessThan($key, $value);
                 } else {
                     $conditions[] = $query->equals($key, $value);
                 }
             }
 
-            return $query->matching($query->logicalAnd($conditions))->execute()->count() > 0;
-        } catch (InvalidQueryException $exception) {
+            return $query->matching($query->logicalAnd(...$conditions))->execute()->count() > 0;
+        } catch (InvalidQueryException) {
             return true;
         }
     }
 
-    /**
-     * Find one by name. major version and minor version
-     *
-     * @param string $libraryName
-     * @param int $majorVersion
-     * @param int $minorVersion
-     * @return \LMS3\Lms3h5p\Domain\Model\Library
-     */
-    public function findOneByNameMajorVersionAndMinorVersion(string $libraryName,
-                                                             int $majorVersion,
-                                                             int $minorVersion): ?Library
-    {
+    public function findOneByNameMajorVersionAndMinorVersion(
+        string $libraryName,
+        int $majorVersion,
+        int $minorVersion
+    ): ?Library {
         $query = $this->createQuery();
 
         $query->matching($query->logicalAnd(
@@ -169,9 +164,9 @@ class LibraryRepository extends Repository
      *
      * @param array $criteria
      * @param array $ordering
-     * @return array|\TYPO3\CMS\Extbase\Persistence\QueryResultInterface
+     * @return QueryResultInterface<int, Library>
      */
-    public function findByConditions(array $criteria, array $ordering = [])
+    public function findByConditions(array $criteria, array $ordering = []): QueryResultInterface
     {
         $query = $this->createQuery();
         if (!empty($ordering)) {
@@ -188,14 +183,7 @@ class LibraryRepository extends Repository
         return $query->matching($query->logicalAnd(...$conditions))->execute();
     }
 
-    /**
-     * Remove by library id
-     *
-     * @param int $id
-     * @return void
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
-     */
-    public function removeById($id): void
+    public function removeById(int $id): void
     {
         $library = $this->findByUid($id);
         if ($library !== null) {
@@ -203,11 +191,9 @@ class LibraryRepository extends Repository
         }
     }
 
-    /**
-     * @return array|\TYPO3\CMS\Extbase\Persistence\QueryResultInterface
-     */
-    public function findAddOns()
+    public function findAddOns(): array
     {
         // TODO: find addon libraries
+        return [];
     }
 }

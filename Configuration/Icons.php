@@ -1,33 +1,14 @@
 <?php
 
-defined('TYPO3') or die();
-
-/* * *************************************************************
- *
- *  Copyright notice
- *
- *  All rights reserved
- *
- *  This script is part of the TYPO3 project. The TYPO3 project is
- *  free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  The GNU General Public License can be found at
- *  http://www.gnu.org/copyleft/gpl.html.
- *
- *  This script is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  This copyright notice MUST APPEAR in all copies of the script!
- * ************************************************************* */
+declare(strict_types=1);
 
 use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
 
 return [
+    'tx_lms3h5p' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:lms3h5p/Resources/Public/Icons/h5p.svg',
+    ],
     'tx-lms3h5p-svgicon' => [
         'provider' => SvgIconProvider::class,
         'source' => 'EXT:lms3h5p/Resources/Public/Icons/Extension.svg',

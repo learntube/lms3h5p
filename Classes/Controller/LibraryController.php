@@ -29,10 +29,9 @@ namespace LMS3\Lms3h5p\Controller;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use LMS3\Lms3h5p\Domain\Repository\LibraryRepository;
 use LMS3\Lms3h5p\Service\H5PIntegrationService;
-use LMS3\Lms3h5p\Service\LibraryService;
 use Psr\Http\Message\ResponseInterface;
-use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Imaging\IconFactory;
@@ -58,17 +57,17 @@ class LibraryController extends AbstractModuleController
     public function __construct(
         private readonly ModuleTemplateFactory $moduleTemplateFactory,
         private readonly IconFactory $iconFactory,
-        private readonly LibraryService $libraryService,
+        private readonly LibraryRepository $libraryRepository,
         private readonly H5PIntegrationService $h5pIntegrationService
     ) {}
 
-    public function initializeAction(): void
+    protected function initializeAction(): void
     {
         $this->moduleTemplate = $this->moduleTemplateFactory->create($this->request);
         $this->moduleTemplate->setFlashMessageQueue($this->getFlashMessageQueue());
         $actions = ['createAction', 'updateAction', 'deleteAction'];
 
-        if (!in_array($this->actionMethodName, $actions)) {
+        if (!in_array($this->actionMethodName, $actions, true)) {
             $this->generateMenu($this->moduleTemplate);
             $this->registerDocheaderButtons();
         }
@@ -76,7 +75,7 @@ class LibraryController extends AbstractModuleController
 
     public function indexAction(): ResponseInterface
     {
-        $libraries = $this->libraryService->findAll();
+        $libraries = $this->libraryRepository->findAll();
 
         $this->moduleTemplate->assign('libraries', $libraries);
 
@@ -85,12 +84,12 @@ class LibraryController extends AbstractModuleController
 
     public function showAction(int $library): ResponseInterface
     {
-        $library = $this->libraryService->findByUid($library);
+        $library = $this->libraryRepository->findByUid($library);
 
         $this->moduleTemplate->assignMultiple([
             'library' => $library,
-            'timeFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm'],
-            'dateFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy']
+            'timeFormat' => 'hh:mm',
+            'dateFormat' => 'y-m-d',
         ]);
 
         return $this->moduleTemplate->renderResponse('Library/Show');
@@ -98,7 +97,7 @@ class LibraryController extends AbstractModuleController
 
     public function deleteAction(int $library): ResponseInterface
     {
-        $library = $this->libraryService->findByUid($library);
+        $library = $this->libraryRepository->findByUid($library);
 
         $this->h5pIntegrationService->getH5PCoreInstance()->deleteLibrary($library->toStdClass());
 
@@ -116,7 +115,7 @@ class LibraryController extends AbstractModuleController
     public function refreshContentTypeCacheAction(): ResponseInterface
     {
         $h5pCoreInstance = $this->h5pIntegrationService->getH5PCoreInstance();
-        if (false === $h5pCoreInstance->updateContentTypeCache()) {
+        if ($h5pCoreInstance->updateContentTypeCache() === false) {
             $this->addFlashMessage(
                 $this->translate('h5pHubNotRespondedErrorMessage'),
                 '',
@@ -132,8 +131,8 @@ class LibraryController extends AbstractModuleController
     {
         $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
-        if ('indexAction' !== $this->actionMethodName) {
-            $uri = $this->uriBuilder->uriFor('index', null);
+        if ($this->actionMethodName !== 'indexAction') {
+            $uri = $this->uriBuilder->uriFor('index');
             $title = $this->translate('back');
             $icon = $this->iconFactory
                 ->getIcon('actions-view-go-back', IconSize::SMALL);
@@ -149,6 +148,6 @@ class LibraryController extends AbstractModuleController
             ->setTitle($title)
             ->setIcon($icon);
 
-        $buttonBar->addButton($button, ButtonBar::BUTTON_POSITION_LEFT);
+        $buttonBar->addButton($button);
     }
 }

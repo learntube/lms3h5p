@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Domain\Repository;
 
@@ -41,14 +42,7 @@ use TYPO3\CMS\Extbase\Persistence\Repository;
  * Please visit: https://h5p.org/MIT-licensed
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
+ *
+ * @extends Repository<Setting>
  */
-class SettingRepository extends Repository
-{
-    public function findOneByConfigKey(string $configKey): ?Setting
-    {
-        $query = $this->createQuery();
-        $query->matching($query->equals('configKey', $configKey));
-
-        return $query->execute()->getFirst();
-    }
-}
+class SettingRepository extends Repository {}

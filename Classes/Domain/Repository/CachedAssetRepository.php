@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Domain\Repository;
 
@@ -28,7 +29,7 @@ namespace LMS3\Lms3h5p\Domain\Repository;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
-use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
+use LMS3\Lms3h5p\Domain\Model\CachedAsset;
 use TYPO3\CMS\Extbase\Persistence\Repository;
 
 /**
@@ -41,22 +42,7 @@ use TYPO3\CMS\Extbase\Persistence\Repository;
  * Please visit: https://h5p.org/MIT-licensed
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
+ *
+ * @extends Repository<CachedAsset>
  */
-class CachedAssetRepository extends Repository
-{
-    public function findByLibrary(int|object $library): QueryResultInterface
-    {
-        $query = $this->createQuery();
-        $query->matching($query->equals('library', $library));
-
-        return $query->execute();
-    }
-
-    public function findByHashKey(string $hashKey): QueryResultInterface
-    {
-        $query = $this->createQuery();
-        $query->matching($query->equals('hashKey', $hashKey));
-
-        return $query->execute();
-    }
-}
+class CachedAssetRepository extends Repository {}

@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\H5PAdapter;
 
@@ -40,9 +41,10 @@ use LMS3\Lms3h5p\H5PAdapter\Editor\EditorAjax;
 use LMS3\Lms3h5p\H5PAdapter\Editor\EditorFileAdapter;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Core\Environment;
-use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
+use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
+use TYPO3\CMS\Extbase\Configuration\Exception\NoServerRequestGivenException;
 
 /**
  * EditorAjaxController
@@ -55,52 +57,12 @@ use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
  */
-class TYPO3H5P
+class TYPO3H5P implements SingletonInterface
 {
-    protected static ?TYPO3H5P $instance = null;
-    protected static ?H5PFramework $interface = null;
-    protected static ?H5PCore $core = null;
-    protected static array $settings = [];
-
-    public static function getInstance(): self
-    {
-        if (null === self::$instance) {
-            self::$instance = new self;
-        }
-
-        return self::$instance;
-    }
-
-    public function getH5PInstance(string $type = 'interface'): H5PContentValidator|H5PValidator|H5PExport|H5peditor|H5PCore|H5PFramework|H5PStorage|null
-    {
-        $settings = $this->getSettings();
-        if (null === self::$interface) {
-            self::$interface = new H5PFramework();
-            self::$core = new \H5PCore(
-                self::$interface,
-                new FileAdapter(),
-                $settings['h5pPublicFolder']['url'],
-                $this->getLanguage(),
-                (bool) $settings['enableExport']
-            );
-            self::$core->aggregateAssets = (bool) $settings['aggregateAssets'];
-        }
-
-        return match ($type) {
-            'validator' => new \H5PValidator(self::$interface, self::$core),
-            'editor' => new \H5peditor(self::$core, new EditorFileAdapter(), new EditorAjax()),
-            'storage' => new \H5PStorage(self::$interface, self::$core),
-            'contentvalidator' => new \H5PContentValidator(self::$interface, self::$core),
-            'export' => new \H5PExport(self::$interface, self::$core),
-            'interface' => self::$interface,
-            'core' => self::$core,
-        };
-    }
-
     /**
      * Default settings used as fallback when TypoScript is not available (e.g. CLI context)
      */
-    private const DEFAULT_SETTINGS = [
+    private const array DEFAULT_SETTINGS = [
         'h5pPublicFolder' => [
             'url' => '/fileadmin/h5p/',
             'path' => '/fileadmin/h5p/',
@@ -130,9 +92,46 @@ class TYPO3H5P
             'embed' => '0',
             'copyright' => '0',
             'icon' => '1',
-            'h5p_version' => '1.0.0',
+            'h5p_version' => '1.28.0',
         ],
     ];
+
+    protected static ?array $settings = null;
+    protected ?H5PCore $core = null;
+
+    public function __construct(
+        private readonly ConfigurationManagerInterface $configurationManagerInterface
+    ) {}
+
+    public function getH5PInstance(string $type = 'interface'): H5PContentValidator|H5PValidator|H5PExport|H5peditor|H5PCore|H5PFramework|H5PStorage|null
+    {
+        $interface = GeneralUtility::makeInstance(H5PFramework::class);
+        if ($type === 'interface') {
+            return $interface;
+        }
+
+        $settings = $this->getSettings();
+        if ($this->core === null) {
+            $this->core = new H5PCore(
+                $interface,
+                GeneralUtility::makeInstance(FileAdapter::class),
+                rtrim((string)$settings['h5pPublicFolder']['url'], '/'),
+                $this->getLanguage(),
+                (bool)$settings['enableExport']
+            );
+            $this->core->aggregateAssets = (bool)$settings['aggregateAssets'];
+        }
+
+        return match ($type) {
+            'validator' => new H5PValidator($interface, $this->core),
+            'editor' => new H5peditor($this->core, GeneralUtility::makeInstance(EditorFileAdapter::class), GeneralUtility::makeInstance(EditorAjax::class)),
+            'storage' => new H5PStorage($interface, $this->core),
+            'contentvalidator' => new H5PContentValidator($interface, $this->core),
+            'export' => new H5PExport($interface, $this->core),
+            'core' => $this->core,
+            default => null,
+        };
+    }
 
     public function getSettings(): array
     {
@@ -140,10 +139,15 @@ class TYPO3H5P
             return self::$settings;
         }
 
-        $configurationManager = GeneralUtility::makeInstance(ConfigurationManagerInterface::class);
-        self::$settings = $configurationManager->getConfiguration(
-            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS, 'Lms3h5p', 'Pi1'
-        );
+        try {
+            self::$settings = $this->configurationManagerInterface->getConfiguration(
+                ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
+                'Lms3h5p',
+                'Pi1'
+            );
+        } catch (NoServerRequestGivenException) {
+            self::$settings = null;
+        }
 
         // Fallback to defaults when TypoScript is not available (CLI context)
         if (empty(self::$settings)) {
@@ -156,23 +160,19 @@ class TYPO3H5P
     protected function getLanguage(): string
     {
         if (Environment::isCli()) {
-            return "en";
+            return 'en';
         }
 
-        /** @var SiteLanguage $siteLanguage */
         $siteLanguage = $this->getRequest()->getAttribute('language');
         $language = $siteLanguage?->getLocale()->getLanguageCode();
-        
-        if (empty($language) || $language === 'default') {
+
+        if (!$language || $language === 'default') {
             $language = 'en';
         }
 
         return $language;
     }
 
-    /**
-     * @return ServerRequestInterface
-     */
     private function getRequest(): ServerRequestInterface
     {
         return $GLOBALS['TYPO3_REQUEST'];
