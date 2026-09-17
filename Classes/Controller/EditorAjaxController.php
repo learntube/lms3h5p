@@ -101,7 +101,7 @@ class EditorAjaxController extends ActionController
         $id = $this->request->getQueryParams()['id'];
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             H5PEditorEndpoints::LIBRARY_INSTALL,
-            $this->request->getQueryParams()['moduleToken'],
+            $this->request->getQueryParams()['moduleToken'] ?? '',
             $id
         );
 
@@ -167,7 +167,7 @@ class EditorAjaxController extends ActionController
 
         $this->h5pIntegrationService->getH5pEditor()->ajax->action(
             H5PEditorEndpoints::LIBRARY_UPLOAD,
-            $this->request->getQueryParams()['moduleToken'],
+            $this->request->getQueryParams()['moduleToken'] ?? '',
             $_FILES['h5p']['tmp_name'],
             $libraryId
         );
