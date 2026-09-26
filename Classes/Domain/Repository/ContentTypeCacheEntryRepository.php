@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Domain\Repository;
 
@@ -41,6 +42,8 @@ use TYPO3\CMS\Extbase\Persistence\Repository;
  * Please visit: https://h5p.org/MIT-licensed
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
+ *
+ * @extends Repository<ContentTypeCacheEntry>
  */
 class ContentTypeCacheEntryRepository extends Repository
 {
@@ -56,7 +59,7 @@ class ContentTypeCacheEntryRepository extends Repository
      * Returns all cache entries as an array of stdObjects, the way the H5P core
      * expects it.
      *
-     * @return array
+     * @return object[]
      */
     public function getContentTypeCacheObjects(): array
     {

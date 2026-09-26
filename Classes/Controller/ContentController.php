@@ -32,12 +32,12 @@ namespace LMS3\Lms3h5p\Controller;
 use LMS3\Lms3h5p\Service\ContentService;
 use LMS3\Lms3h5p\Service\H5PIntegrationService;
 use Psr\Http\Message\ResponseInterface;
-use TYPO3\CMS\Backend\Attribute\Controller;
-use TYPO3\CMS\Backend\Template\Components\ButtonBar;
+use TYPO3\CMS\Backend\Attribute\AsController;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
+use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 use TYPO3\CMS\Extbase\Http\ForwardResponse;
@@ -53,7 +53,7 @@ use TYPO3\CMS\Extbase\Http\ForwardResponse;
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
  */
-#[Controller]
+#[AsController]
 class ContentController extends AbstractModuleController
 {
     protected ModuleTemplate $moduleTemplate;
@@ -62,17 +62,18 @@ class ContentController extends AbstractModuleController
         private readonly ModuleTemplateFactory $moduleTemplateFactory,
         private readonly IconFactory $iconFactory,
         private readonly H5PIntegrationService $h5pIntegrationService,
-        private readonly ContentService $contentService
+        private readonly ContentService $contentService,
+        private readonly PageRenderer $pageRenderer
     ) {}
 
-    public function initializeAction(): void
+    protected function initializeAction(): void
     {
         $this->moduleTemplate = $this->moduleTemplateFactory->create($this->request);
         $this->moduleTemplate->setFlashMessageQueue($this->getFlashMessageQueue());
         $this->moduleTemplate->assign('settings', $this->settings);
         $actions = ['createAction', 'updateAction', 'deleteAction'];
 
-        if (!in_array($this->actionMethodName, $actions)) {
+        if (!in_array($this->actionMethodName, $actions, true)) {
             $this->generateMenu($this->moduleTemplate);
             $this->registerDocheaderButtons();
         }
@@ -85,9 +86,9 @@ class ContentController extends AbstractModuleController
 
         $this->moduleTemplate->assignMultiple([
             'contents' => $contents,
-            'dateFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy'],
-            'timeFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm'],
-            'pid' => empty($this->request->getQueryParams()['id'])
+            'dateFormat' => 'Y-m-d',
+            'timeFormat' => 'hh:mm',
+            'pid' => empty($this->request->getQueryParams()['id']),
         ]);
 
         return $this->moduleTemplate->renderResponse('Content/Index');
@@ -97,12 +98,13 @@ class ContentController extends AbstractModuleController
     {
         $h5pIntegrationSettings = $this->h5pIntegrationService->getSettingsWithEditor($this->uriBuilder);
 
+        $this->addJsFiles($h5pIntegrationSettings['core']['scripts']);
+        $this->addCSSFiles($h5pIntegrationSettings['core']['styles']);
+
         $this->moduleTemplate->assignMultiple([
             'h5pSettings' => json_encode($h5pIntegrationSettings),
-            'scripts' => $h5pIntegrationSettings['core']['scripts'],
-            'styles' => $h5pIntegrationSettings['core']['styles'],
             'pid' => empty($this->request->getQueryParams()['id']),
-            'parameters' => ''
+            'parameters' => '',
         ]);
 
         return $this->moduleTemplate->renderResponse('Content/New');
@@ -116,21 +118,28 @@ class ContentController extends AbstractModuleController
         $parameters = $this->request->getArgument('parameters');
         $options = $this->request->getArgument('options');
 
-        $content = $this->contentService->handleCreateOrUpdate($library, $parameters, null, $options);
+        $content = $this->contentService->handleCreateOrUpdate(
+            $this->h5pIntegrationService->getH5PCoreInstance(),
+            $this->h5pIntegrationService->getH5pEditor(),
+            $library,
+            $parameters,
+            null,
+            $options
+        );
         if ($content === null) {
             $this->showH5pErrorMessages();
             return new ForwardResponse('new');
-        } else {
-            $this->addFlashMessage(
-                sprintf(
-                    $this->translate('contentCreatedMessage'),
-                    $content->getTitle()
-                ),
-                $this->translate('contentCreated')
-            );
-
-            return (new ForwardResponse('show'))->withArguments(['content' => $content->getUid()]);
         }
+        $this->addFlashMessage(
+            sprintf(
+                $this->translate('contentCreatedMessage'),
+                $content->getTitle()
+            ),
+            $this->translate('contentCreated')
+        );
+
+        return (new ForwardResponse('show'))->withArguments(['content' => $content->getUid()]);
+
     }
 
     public function showAction(int $content): ResponseInterface
@@ -141,15 +150,16 @@ class ContentController extends AbstractModuleController
         $h5pIntegrationSettings = $this->h5pIntegrationService->getH5PSettings(
             $this->uriBuilder,
             [
-                $content->getUid()
+                $content->getUid(),
             ]
         );
+
+        $this->addJsFiles($this->h5pIntegrationService->getMergedScripts($h5pIntegrationSettings));
+        $this->addCSSFiles($this->h5pIntegrationService->getMergedStyles($h5pIntegrationSettings));
 
         $this->moduleTemplate->assignMultiple([
             'content' => $content,
             'h5pSettings' => json_encode($h5pIntegrationSettings),
-            'scripts' => $this->h5pIntegrationService->getMergedScripts($h5pIntegrationSettings),
-            'styles' => $this->h5pIntegrationService->getMergedStyles($h5pIntegrationSettings),
         ]);
 
         return $this->moduleTemplate->renderResponse('Content/Show');
@@ -166,10 +176,11 @@ class ContentController extends AbstractModuleController
         $parameters = '{"params":' . $content->getFiltered() . ', "metadata":' . json_encode($metadata) . '}';
         $options = $this->h5pIntegrationService->getH5PCoreInstance()->getDisplayOptionsForEdit($content->getDisable());
 
+        $this->addJsFiles($h5pIntegrationSettings['core']['scripts']);
+        $this->addCSSFiles($h5pIntegrationSettings['core']['styles']);
+
         $this->moduleTemplate->assignMultiple([
             'h5pSettings' => json_encode($h5pIntegrationSettings),
-            'scripts' => $h5pIntegrationSettings['core']['scripts'],
-            'styles' => $h5pIntegrationSettings['core']['styles'],
             'content' => $content,
             'parameters' => $parameters,
             'options' => $options,
@@ -182,47 +193,70 @@ class ContentController extends AbstractModuleController
     {
         $library = $this->request->getArgument('library');
         $parameters = $this->request->getArgument('parameters');
-        $contentId = $this->request->getArgument('contentId');
+        $contentId = (int)$this->request->getArgument('contentId');
         $options = $this->request->getArgument('options');
 
-        $content = $this->contentService->handleCreateOrUpdate($library, $parameters, $contentId, $options);
-        if (null === $content) {
+        $content = $this->contentService->handleCreateOrUpdate(
+            $this->h5pIntegrationService->getH5PCoreInstance(),
+            $this->h5pIntegrationService->getH5pEditor(),
+            $library,
+            $parameters,
+            $contentId,
+            $options
+        );
+        if ($content === null) {
             $this->showH5pErrorMessages();
             return new ForwardResponse('index');
-        } else {
-            $this->addFlashMessage(
-                sprintf(
-                    $this->translate('contentUpdatedMessage'),
-                    $content->getTitle()
-                ),
-                $this->translate('contentUpdated')
-            );
-
-            return (new ForwardResponse('show'))->withArguments(['content' => $content->getUid()]);
         }
+        $this->addFlashMessage(
+            sprintf(
+                $this->translate('contentUpdatedMessage'),
+                $content->getTitle()
+            ),
+            $this->translate('contentUpdated')
+        );
+
+        return (new ForwardResponse('show'))->withArguments(['content' => $content->getUid()]);
+
     }
 
     public function deleteAction(int $content): ResponseInterface
     {
         $content = $this->contentService->findByUid($content);
-        $this->contentService->handleDelete($content);
+        if ($content) {
+            $this->contentService->handleDelete($this->h5pIntegrationService->getH5PCoreInstance(), $content);
 
-        $this->addFlashMessage(
-            sprintf(
-                $this->translate('contentDeletedMessage'),
-                $content->getTitle()
-            ),
-            $this->translate('contentDeleted')
-        );
+            $this->addFlashMessage(
+                sprintf(
+                    $this->translate('contentDeletedMessage'),
+                    $content->getTitle()
+                ),
+                $this->translate('contentDeleted')
+            );
+        }
 
         return new ForwardResponse('index');
+    }
+
+    private function addJsFiles(array $jsFiles): void
+    {
+        foreach ($jsFiles as $file) {
+            $this->pageRenderer->addJsFile($file);
+        }
+    }
+
+    private function addCSSFiles(array $cssFiles): void
+    {
+        foreach ($cssFiles as $file) {
+            $this->pageRenderer->addCssFile($file);
+        }
     }
 
     protected function registerDocheaderButtons(): void
     {
         $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
-        if ('indexAction' !== $this->actionMethodName) {
+        if ($this->actionMethodName !== 'indexAction') {
             $uri = $this->uriBuilder->uriFor('index');
             $title = $this->translate('back');
             $icon = $this->iconFactory
@@ -238,11 +272,12 @@ class ContentController extends AbstractModuleController
             ->setHref($uri)
             ->setTitle($title)
             ->setIcon($icon);
-        $buttonBar->addButton($button, ButtonBar::BUTTON_POSITION_LEFT);
+        $buttonBar->addButton($button);
     }
 
     private function showH5pErrorMessages(): void
     {
+        /** @var object{code: string, message: string} $errorMessage */
         foreach ($this->h5pIntegrationService->getH5PCoreInstance()->h5pF->getMessages('error') as $errorMessage) {
             $this->addFlashMessage(
                 $errorMessage->message,

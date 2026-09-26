@@ -1,5 +1,6 @@
 <?php
-/** @noinspection PhpUnhandledExceptionInspection */
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p;
 
@@ -28,9 +29,10 @@ namespace LMS3\Lms3h5p;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
-use TYPO3\CMS\Core\Core\Environment;
 use LMS3\Lms3h5p\H5PAdapter\Core\FileAdapter;
-use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
+use LMS3\Lms3h5p\H5PAdapter\TYPO3H5P;
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Setup
@@ -47,41 +49,10 @@ class Setup
 {
     private array $ts;
 
-    /**
-     * Default settings used as fallback when TypoScript is not available (e.g. CLI context)
-     */
-    private const DEFAULT_SETTINGS = [
-        'h5pPublicFolder' => [
-            'url' => '/fileadmin/h5p/',
-            'path' => '/fileadmin/h5p/',
-        ],
-        'subFolders' => [
-            'content' => 'content',
-            'libraries' => 'libraries',
-            'core' => 'h5p-core',
-            'editor' => 'h5p-editor',
-            'editorTempfiles' => 'editor-temp',
-            'temp' => 'temp',
-            'exports' => 'exports',
-            'cachedAssets' => 'cached-assets',
-        ],
-        'libraryPath' => '/vendor/h5p/',
-        'aggregateAssets' => '1',
-        'enableExport' => '1',
-    ];
-
-    public function __construct(private readonly ConfigurationManagerInterface $configurationManager)
+    public function __construct()
     {
-        $this->ts = $this->configurationManager->getConfiguration(
-            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
-            'Lms3h5p',
-            'Pi1'
-        );
-
-        // Fallback to defaults when TypoScript is not available (CLI context)
-        if (empty($this->ts)) {
-            $this->ts = self::DEFAULT_SETTINGS;
-        }
+        $typo3h5p = GeneralUtility::makeInstance(TYPO3H5P::class);
+        $this->ts = $typo3h5p->getSettings();
     }
 
     /**
@@ -89,7 +60,7 @@ class Setup
      */
     public function copyResourcesFromH5PLibraries(): void
     {
-        $h5pLibraryPath = dirname(Environment::getPublicPath()) . $this->ts['libraryPath'];
+        $h5pLibraryPath = Environment::getProjectPath() . $this->ts['libraryPath'];
 
         if (!is_dir($h5pLibraryPath)) {
             throw new \RuntimeException(

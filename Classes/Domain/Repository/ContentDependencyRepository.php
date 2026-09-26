@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Domain\Repository;
 
@@ -28,7 +29,7 @@ namespace LMS3\Lms3h5p\Domain\Repository;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
-use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
+use LMS3\Lms3h5p\Domain\Model\ContentDependency;
 use TYPO3\CMS\Extbase\Persistence\Repository;
 
 /**
@@ -41,39 +42,7 @@ use TYPO3\CMS\Extbase\Persistence\Repository;
  * Please visit: https://h5p.org/MIT-licensed
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
+ *
+ * @extends Repository<ContentDependency>
  */
-class ContentDependencyRepository extends Repository
-{
-    public function findByContent(int|object $content): QueryResultInterface
-    {
-        $query = $this->createQuery();
-        $query->matching($query->equals('content', $content));
-
-        return $query->execute();
-    }
-
-    public function findByLibrary(int|object $library): QueryResultInterface
-    {
-        $query = $this->createQuery();
-        $query->matching($query->equals('library', $library));
-
-        return $query->execute();
-    }
-
-    public function findByConditions(array $criteria, array $ordering = []): array|QueryResultInterface
-    {
-        $query = $this->createQuery();
-        if (!empty($ordering)) {
-            $query->setOrderings($ordering);
-        }
-        if (empty($criteria)) {
-            return $query->execute();
-        }
-        $conditions = [];
-        foreach ($criteria as $key => $value) {
-            $conditions[] = $query->equals($key, $value);
-        }
-
-        return $query->matching($query->logicalAnd(...$conditions))->execute();
-    }
-}
+class ContentDependencyRepository extends Repository {}

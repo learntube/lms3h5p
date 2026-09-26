@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Command;
 
@@ -8,6 +9,7 @@ use LMS3\Lms3h5p\Domain\Repository\LibraryDependencyRepository;
 use LMS3\Lms3h5p\Domain\Repository\LibraryRepository;
 use LMS3\Lms3h5p\H5PAdapter\Core\H5PFramework;
 use LMS3\Lms3h5p\H5PAdapter\TYPO3H5P;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,7 +17,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Persistence\Generic\QueryResult;
 
 /**
  * H5P Repair Library Command
@@ -28,13 +29,14 @@ use TYPO3\CMS\Extbase\Persistence\Generic\QueryResult;
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
  */
+#[AsCommand('h5p:repairLibrary')]
 class H5pRepairLibraryCommand extends Command
 {
-    public function configure(): void
+    protected function configure(): void
     {
         $this->setDescription('Repair H5P library dependencies by re-reading them from library.json.');
         $this->addArgument(
-          'machineName',
+            'machineName',
             InputArgument::REQUIRED,
             'The library name with version e.g. H5P.MultiChoice-1.16'
         );
@@ -43,7 +45,7 @@ class H5pRepairLibraryCommand extends Command
     /**
      * Repair library dependencies from filesystem
      */
-    public function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
 
@@ -61,12 +63,12 @@ class H5pRepairLibraryCommand extends Command
         try {
             $libraryJsonPath = sprintf(
                 '%s/fileadmin/h5p/libraries/%s/library.json',
-                    Environment::getPublicPath(),
-                    $input->getArgument('machineName')
+                Environment::getPublicPath(),
+                $input->getArgument('machineName')
             );
 
             /** @var H5PFramework $interface */
-            $interface = TYPO3H5P::getInstance()->getH5PInstance();
+            $interface = GeneralUtility::makeInstance(TYPO3H5P::class)->getH5PInstance();
 
             if (!file_exists($libraryJsonPath)) {
                 $io->error('Library not found on filesystem: ' . $libraryJsonPath);
@@ -84,19 +86,18 @@ class H5pRepairLibraryCommand extends Command
 
             $library = $libraryRepository->findOneByNameMajorVersionAndMinorVersion(
                 $libraryArray['machineName'],
-                $libraryArray['majorVersion'],
-                $libraryArray['minorVersion'],
+                (int)$libraryArray['majorVersion'],
+                (int)$libraryArray['minorVersion'],
             );
 
             if (!$library instanceof Library) {
                 $io->error($libraryArray['machineName'] . ' not found in the database');
                 return Command::FAILURE;
-            }
 
+            }
             $io->writeln('<info>' . $libraryArray['machineName'] . ' found in the database</info>');
             $io->writeln('-> Checking library dependencies');
 
-            /** @var QueryResult $dependencies */
             $dependencies = $library->getLibraryDependencies();
             if ($dependencies->count() === 0) {
                 $io->writeln($libraryArray['machineName'] . ' library dependencies not found in the database');
@@ -104,9 +105,9 @@ class H5pRepairLibraryCommand extends Command
                 $io->writeln($libraryArray['machineName'] . ' library dependencies found in the database');
             }
 
-            $totalDependencyCount = count($libraryArray['preloadedDependencies'] ?? []) +
-                count($libraryArray['editorDependencies'] ?? []) +
-                count($libraryArray['dynamicDependencies'] ?? []);
+            $totalDependencyCount = count($libraryArray['preloadedDependencies'] ?? [])
+                + count($libraryArray['editorDependencies'] ?? [])
+                + count($libraryArray['dynamicDependencies'] ?? []);
 
             if ($dependencies->count() !== $totalDependencyCount) {
                 $io->writeln($libraryArray['machineName'] . ' library dependencies count doesn\'t match, actual count is ' . $totalDependencyCount);

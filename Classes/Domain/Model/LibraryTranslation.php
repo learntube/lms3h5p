@@ -1,5 +1,6 @@
 <?php
-declare(strict_types = 1);
+
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Domain\Model;
 
@@ -28,6 +29,9 @@ namespace LMS3\Lms3h5p\Domain\Model;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
+
 /**
  * Library Translation
  *
@@ -39,93 +43,52 @@ namespace LMS3\Lms3h5p\Domain\Model;
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
  */
-class LibraryTranslation extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
+class LibraryTranslation extends AbstractEntity
 {
-    /**
-     * @var Library
-     */
-    protected $library;
+    protected Library $library;
+    protected string $languageCode;
+    protected string $translation;
 
-    /**
-     * @var string
-     */
-    protected $languageCode;
-
-    /**
-     * @var string
-     */
-    protected $translation;
-
-    /**
-     * @return Library
-     */
     public function getLibrary(): Library
     {
         return $this->library;
     }
 
-    /**
-     * @param Library $library
-     * @return LibraryTranslation
-     */
     public function setLibrary(Library $library): LibraryTranslation
     {
         $this->library = $library;
         return $this;
     }
 
-    /**
-     * @return string
-     */
     public function getLanguageCode(): string
     {
         return $this->languageCode;
     }
 
-    /**
-     * @param string $languageCode
-     * @return LibraryTranslation
-     */
     public function setLanguageCode(string $languageCode): LibraryTranslation
     {
         $this->languageCode = $languageCode;
         return $this;
     }
 
-    /**
-     * @return string
-     */
     public function getTranslation(): string
     {
         return $this->translation;
     }
 
-    /**
-     * @param string $translation
-     * @return LibraryTranslation
-     */
     public function setTranslation(string $translation): LibraryTranslation
     {
         $this->translation = $translation;
         return $this;
     }
 
-    /**
-     * Create library translation
-     *
-     * @param Library $library
-     * @param string $languageCode
-     * @param string $translation
-     * @return LibraryTranslation
-     */
-    public static function create(Library $library, string $languageCode, string $translation) : LibraryTranslation
+    public static function create(Library $library, string $languageCode, string $translation): LibraryTranslation
     {
-        $translationInstance = new LibraryTranslation();
+        $translationInstance = GeneralUtility::makeInstance(LibraryTranslation::class);
         $translationInstance->setLibrary($library)
             ->setLanguageCode($languageCode)
             ->setTranslation($translation);
 
         return $translationInstance;
     }
-
 }

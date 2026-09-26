@@ -27,6 +27,10 @@ namespace LMS3\Lms3h5p\H5PAdapter\Core;
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use Exception;
+use H5PCore;
+use H5peditorFile;
+use H5PFileStorage;
 use LMS3\Lms3h5p\Domain\Model\CachedAsset;
 use LMS3\Lms3h5p\Domain\Model\Content;
 use LMS3\Lms3h5p\Domain\Model\EditorTempFile;
@@ -35,6 +39,7 @@ use LMS3\Lms3h5p\Domain\Repository\ContentRepository;
 use LMS3\Lms3h5p\Domain\Repository\EditorTempfileRepository;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\PathUtility;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
 use TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException;
@@ -51,31 +56,24 @@ use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
  */
-class FileAdapter implements \H5PFileStorage
+class FileAdapter implements H5PFileStorage
 {
-    protected array $h5pSettings;
-    protected ConfigurationManagerInterface $configurationManager;
+    protected array $h5pSettings = [];
     protected PersistenceManager $persistenceManager;
     protected ContentRepository $contentRepository;
     protected CachedAssetRepository $cachedAssetRepository;
 
-    public function injectConfigurationManager(ConfigurationManagerInterface $configurationManager)
-    {
-        $this->h5pSettings = $configurationManager->getConfiguration(
-            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS, 'Lms3h5p', 'Pi1'
-        );
-    }
-
     public function __construct()
     {
-        $this->configurationManager = GeneralUtility::makeInstance(ConfigurationManagerInterface::class);
         $this->persistenceManager = GeneralUtility::makeInstance(PersistenceManager::class);
         $this->contentRepository = GeneralUtility::makeInstance(ContentRepository::class);
         $this->cachedAssetRepository = GeneralUtility::makeInstance(CachedAssetRepository::class);
-        $this->h5pSettings = $this->configurationManager->getConfiguration(
-            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS, 'Lms3h5p', 'Pi1'
+        $configurationManager = GeneralUtility::makeInstance(ConfigurationManagerInterface::class);
+        $this->h5pSettings = $configurationManager->getConfiguration(
+            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
+            'Lms3h5p',
+            'Pi1'
         );
-
     }
 
     /**
@@ -83,14 +81,14 @@ class FileAdapter implements \H5PFileStorage
      *
      * @param array $library
      *  Library properties
-     * @throws \Exception
+     * @throws Exception
      */
-    public function saveLibrary($library)
+    public function saveLibrary($library): void
     {
-        $dest = $this->getFolderPath('libraries') . \H5PCore::libraryToFolderName($library);
+        $dest = $this->getFolderPath('libraries') . H5PCore::libraryToFolderName($library);
 
         // Make sure destination dir doesn't exist
-        \H5PCore::deleteFileTree($dest);
+        H5PCore::deleteFileTree($dest);
 
         // Move library folder
         self::copyFileTree($library['uploadDirectory'], $dest);
@@ -103,14 +101,14 @@ class FileAdapter implements \H5PFileStorage
      *  Path on file system to content directory.
      * @param array $content
      *  Content properties
-     * @throws \Exception
+     * @throws Exception
      */
-    public function saveContent($source, $content)
+    public function saveContent($source, $content): void
     {
         $dest = $this->getFolderPath('content') . $content['id'];
 
         // Remove any old content
-        \H5PCore::deleteFileTree($dest);
+        H5PCore::deleteFileTree($dest);
 
         self::copyFileTree($source, $dest);
     }
@@ -121,9 +119,9 @@ class FileAdapter implements \H5PFileStorage
      * @param array $content
      *  Content properties
      */
-    public function deleteContent($content)
+    public function deleteContent($content): void
     {
-        \H5PCore::deleteFileTree($this->getFolderPath('content') . $content['id']);
+        H5PCore::deleteFileTree($this->getFolderPath('content') . $content['id']);
     }
 
     /**
@@ -133,9 +131,9 @@ class FileAdapter implements \H5PFileStorage
      *  Identifier of content to clone.
      * @param int $newId
      *  The cloned content's identifier
-     * @throws \Exception
+     * @throws Exception
      */
-    public function cloneContent($id, $newId)
+    public function cloneContent($id, $newId): void
     {
         $path = $this->getFolderPath('content');
         if (file_exists($path . $id)) {
@@ -165,9 +163,9 @@ class FileAdapter implements \H5PFileStorage
      *  Content identifier
      * @param string $target
      *  Where the content folder will be saved
-     * @throws \Exception
+     * @throws Exception
      */
-    public function exportContent($id, $target)
+    public function exportContent($id, $target): void
     {
         $source = $this->getFolderPath('content') . $id;
         if (file_exists($source)) {
@@ -186,11 +184,11 @@ class FileAdapter implements \H5PFileStorage
      *  Library properties
      * @param string $target
      *  Where the library folder will be saved
-     * @throws \Exception
+     * @throws Exception
      */
-    public function exportLibrary($library, $target)
+    public function exportLibrary($library, $target): void
     {
-        $folder = \H5PCore::libraryToString($library, true);
+        $folder = H5PCore::libraryToFolderName($library);
         $srcPath = $this->getFolderPath('libraries') . $folder;
         $destination = $target . DIRECTORY_SEPARATOR . $folder;
 
@@ -207,16 +205,16 @@ class FileAdapter implements \H5PFileStorage
      * @throws IllegalObjectTypeException
      * @throws UnknownObjectException
      */
-    public function saveExport($source, $filename)
+    public function saveExport($source, $filename): void
     {
         $this->deleteExport($filename);
         $exportDir = $this->getFolderPath('exports');
         if (!self::dirReady($exportDir)) {
-            throw new \Exception('Unable to create directory for H5P export file.');
+            throw new Exception('Unable to create directory for H5P export file.', 4393869282);
         }
 
         if (!copy($source, $exportDir . $filename)) {
-            throw new \Exception('Unable to save H5P export file.');
+            throw new Exception('Unable to save H5P export file.', 3982974687);
         }
 
         // Get the content from the filename again
@@ -231,7 +229,7 @@ class FileAdapter implements \H5PFileStorage
      *
      * @param string $filename
      */
-    public function deleteExport($filename)
+    public function deleteExport($filename): void
     {
         $target = $this->getFolderPath('exports') . $filename;
         if (file_exists($target)) {
@@ -243,7 +241,7 @@ class FileAdapter implements \H5PFileStorage
      * Check if the given export file exists
      *
      * @param string $filename
-     * @return boolean
+     * @return bool
      */
     public function hasExport($filename)
     {
@@ -261,7 +259,7 @@ class FileAdapter implements \H5PFileStorage
      * @param string $key
      *  Hashed key for cached asset
      */
-    public function cacheAssets(&$files, $key)
+    public function cacheAssets(&$files, $key): void
     {
         foreach ($files as $type => $assets) {
             if (empty($assets)) {
@@ -272,24 +270,29 @@ class FileAdapter implements \H5PFileStorage
             foreach ($assets as $asset) {
                 // Get content from asset file
                 $assetContent = '';
-                if (file_exists(Environment::getPublicPath() . DIRECTORY_SEPARATOR . $asset->path)) {
-                    $assetContent = file_get_contents(Environment::getPublicPath() . DIRECTORY_SEPARATOR . $asset->path);
+                if (file_exists(Environment::getPublicPath() . DIRECTORY_SEPARATOR . ltrim($asset->path, '/'))) {
+                    $assetContent = file_get_contents(Environment::getPublicPath() . DIRECTORY_SEPARATOR . ltrim($asset->path, '/'));
                 }
                 $cssRelPath = preg_replace('/[^\/]+$/', '', $asset->path);
+                // ensure CSS contains URLs and not local paths
+                $cssRelPath = str_replace($this->h5pSettings['h5pPublicFolder']['path'], $this->h5pSettings['h5pPublicFolder']['url'], $cssRelPath);
 
                 // Get file content and concatenate
                 if ($type === 'scripts') {
-                    $content .= $assetContent.";\n";
+                    $content .= $assetContent . ";\n";
                 } else {
                     // Rewrite relative URLs used inside stylesheets
                     $content .= preg_replace_callback(
-                            '/url\([\'"]?([^"\')]+)[\'"]?\)/i', function ($matches) use ($cssRelPath) {
+                        '/url\([\'"]?([^"\')]+)[\'"]?\)/i',
+                        function ($matches) use ($cssRelPath) {
                             if (preg_match("/^(data:|([a-z0-9]+:)?\/)/i", $matches[1]) === 1) {
                                 return $matches[0]; // Not relative, skip
                             }
 
-                            return 'url("../../..' . $cssRelPath.$matches[1].'")';
-                        }, $assetContent)."\n";
+                            return 'url("' . $cssRelPath . $matches[1] . '")';
+                        },
+                        $assetContent
+                    ) . "\n";
                 }
             }
 
@@ -298,12 +301,15 @@ class FileAdapter implements \H5PFileStorage
             $ext = ($type === 'scripts' ? 'js' : 'css');
             $outputfile = "{$key}.{$ext}";
             file_put_contents($cachedAssetsDir . $outputfile, $content);
-            $files[$type] = [(object) [
-                'path'    => $this->getPublicFolderPath('cachedAssets', false) . $outputfile,
+            $files[$type] = [(object)[
+                'path'    => PathUtility::getAbsolutePathOfRelativeReferencedFileOrPath(
+                    $this->getPublicFolderPath('cachedAssets', false),
+                    $outputfile
+                ),
                 'version' => '',
             ]];
 
-            $cacheAsset = new CachedAsset();
+            $cacheAsset = GeneralUtility::makeInstance(CachedAsset::class);
             $cacheAsset->setHashKey($key);
             $cacheAsset->setType($type);
             $this->cachedAssetRepository->add($cacheAsset);
@@ -325,7 +331,7 @@ class FileAdapter implements \H5PFileStorage
         $jsFilePath = $this->getPublicFolderPath('cachedAssets') . $jsFileName;
         $path = $this->getPublicFolderPath('cachedAssets', false);
         if (file_exists($jsFilePath)) {
-            $files['scripts'] = [(object) [
+            $files['scripts'] = [(object)[
                 'path'    => $path . $jsFileName,
                 'version' => '',
             ]];
@@ -334,7 +340,7 @@ class FileAdapter implements \H5PFileStorage
         $cssFileName = "{$key}.css";
         $cssFilePath = $this->getPublicFolderPath('cachedAssets') . $cssFileName;
         if (file_exists($cssFilePath)) {
-            $files['styles'] = [(object) [
+            $files['styles'] = [(object)[
                 'path'    => $path . $cssFileName,
                 'version' => '',
             ]];
@@ -349,7 +355,7 @@ class FileAdapter implements \H5PFileStorage
      * @param array $keys
      *   The hash keys of removed files
      */
-    public function deleteCachedAssets($keys)
+    public function deleteCachedAssets($keys): void
     {
         $cachedAssetsPath = $this->getFolderPath('cachedAssets');
         foreach ($keys as $hash) {
@@ -373,8 +379,8 @@ class FileAdapter implements \H5PFileStorage
         /**
          * This might cause issues if files are not put locally, because the path is generated inside H5P
          * and cannot be modified.
-         * @see \H5PCore::getDependenciesFiles()
-         * @see \H5PCore::getDependencyAssets()
+         * @see H5PCore::getDependenciesFiles()
+         * @see H5PCore::getDependencyAssets()
          */
         return file_get_contents($file_path);
     }
@@ -383,9 +389,9 @@ class FileAdapter implements \H5PFileStorage
      * Save files uploaded through the editor.
      * The files must be marked as temporary until the content form is saved.
      *
-     * @param \H5peditorFile $file
+     * @param H5peditorFile $file
      * @param int $contentId
-     * @return \H5peditorFile
+     * @return H5peditorFile
      */
     public function saveFile($file, $contentId)
     {
@@ -407,7 +413,7 @@ class FileAdapter implements \H5PFileStorage
         @copy($_FILES['file']['tmp_name'], $path);
 
         $editorTempfileRepository = GeneralUtility::makeInstance(EditorTempfileRepository::class);
-        $editotTempFile = new EditorTempFile();
+        $editotTempFile = GeneralUtility::makeInstance(EditorTempFile::class);
         $editotTempFile->setPath(ltrim($path, Environment::getPublicPath()));
         $editotTempFile->setCreatedAt(time());
         $editorTempfileRepository->add($editotTempFile);
@@ -424,7 +430,7 @@ class FileAdapter implements \H5PFileStorage
      * @param string|int $fromId Content ID or 'editor' string
      * @param int $toId Target Content ID
      */
-    public function cloneContentFile($file, $fromId, $toId)
+    public function cloneContentFile($file, $fromId, $toId): void
     {
         // Determine source path
         if ($fromId === 'editor') {
@@ -460,15 +466,18 @@ class FileAdapter implements \H5PFileStorage
      * @param string $contentId Id of content
      *
      * @return object Object containing h5p json and content json data
-     * @throws \Exception
+     * @throws Exception
      */
-    public function moveContentDirectory($source, $contentId = NULL)
+    public function moveContentDirectory($source, $contentId = null)
     {
         if ($source === null) {
-            return;
+            return (object)[
+                'h5pJson'     => '',
+                'contentJson' => '',
+            ];
         }
 
-        if ($contentId === null || $contentId == 0) {
+        if ($contentId === null || (int)$contentId === 0) {
             $target = $this->getFolderPath('editorTempfiles');
         } else {
             // Use content folder
@@ -489,7 +498,7 @@ class FileAdapter implements \H5PFileStorage
         $h5pJson = $this->getContent($source . DIRECTORY_SEPARATOR . 'h5p.json');
         $contentJson = $this->getContent($contentSource . DIRECTORY_SEPARATOR . 'content.json');
 
-        return (object) [
+        return (object)[
             'h5pJson'     => $h5pJson,
             'contentJson' => $contentJson,
         ];
@@ -501,7 +510,7 @@ class FileAdapter implements \H5PFileStorage
      *
      * @param string $file path + name
      * @param int $contentId
-     * @return string|int File ID or NULL if not found
+     * @return string|int File path or NULL if not found
      */
     public function getContentFile($file, $contentId)
     {
@@ -517,7 +526,7 @@ class FileAdapter implements \H5PFileStorage
      * @param string $file path + name
      * @param int $contentId
      */
-    public function removeContentFile($file, $contentId)
+    public function removeContentFile($file, $contentId): void
     {
         $path = $this->getFolderPath('content') . $contentId . DIRECTORY_SEPARATOR . $file;
         if (file_exists($path)) {
@@ -543,13 +552,12 @@ class FileAdapter implements \H5PFileStorage
      *
      * @param string $source From path
      * @param string $destination To path
-     * @return void Indicates if the directory existed.
-     * @throws \Exception
+     * @throws Exception
      */
-    public static function copyFileTree($source, $destination)
+    public static function copyFileTree($source, $destination): void
     {
         if (!self::dirReady($destination)) {
-            throw new \Exception('unabletocopy');
+            throw new Exception('unabletocopy', 3643151353);
         }
 
         $ignoredFiles = self::getIgnoredFiles("{$source}/.h5pignore");
@@ -558,11 +566,11 @@ class FileAdapter implements \H5PFileStorage
         if ($dir === false) {
             trigger_error('Unable to open directory ' . $source, E_USER_WARNING);
 
-            throw new \Exception('unabletocopy');
+            throw new Exception('unabletocopy', 8344758862);
         }
 
         while (false !== ($file = readdir($dir))) {
-            if (($file != '.') && ($file != '..') && $file != '.git' && $file != '.gitignore' && !in_array($file, $ignoredFiles)) {
+            if (($file !== '.') && ($file !== '..') && $file !== '.git' && $file !== '.gitignore' && !in_array($file, $ignoredFiles, true)) {
                 if (is_dir("{$source}/{$file}")) {
                     self::copyFileTree("{$source}/{$file}", "{$destination}/{$file}");
                 } else {
@@ -588,7 +596,7 @@ class FileAdapter implements \H5PFileStorage
                 return false;
             }
 
-            mkdir($path, 0777, true);
+            mkdir($path, 0o777, true);
         }
 
         if (!is_dir($path)) {
@@ -639,7 +647,7 @@ class FileAdapter implements \H5PFileStorage
     {
         $parts = explode('-', str_replace('.h5p', '', $filename));
         $contentId = end($parts);
-        return $this->contentRepository->findByUid($contentId);
+        return $this->contentRepository->findByUid((int)$contentId);
     }
 
     /**
@@ -651,7 +659,7 @@ class FileAdapter implements \H5PFileStorage
      */
     private function getFolderPath($folderName, $absolutePath = true)
     {
-        if (false === $absolutePath) {
+        if ($absolutePath === false) {
             return $this->h5pSettings['h5pPublicFolder']['path'] . $this->h5pSettings['subFolders'][$folderName] . DIRECTORY_SEPARATOR;
         }
 
@@ -667,7 +675,7 @@ class FileAdapter implements \H5PFileStorage
      */
     private function getPublicFolderPath($folderName, $absolutePath = true)
     {
-        if (false === $absolutePath) {
+        if ($absolutePath === false) {
             return $this->h5pSettings['h5pPublicFolder']['url'] . $this->h5pSettings['subFolders'][$folderName] . DIRECTORY_SEPARATOR;
         }
 
@@ -677,13 +685,13 @@ class FileAdapter implements \H5PFileStorage
     /**
      * Check if the library has a presave.js in the root folder
      *
-     * @param string $libraryName
+     * @param string $libraryFolder
      * @param string $developmentPath
      * @return bool
      */
-    public function hasPresave($libraryName, $developmentPath = null)
+    public function hasPresave($libraryFolder, $developmentPath = null)
     {
-        $srcPath = $this->getFolderPath('libraries') . $libraryName;
+        $srcPath = $this->getFolderPath('libraries') . $libraryFolder;
         $filePath = realpath($srcPath . DIRECTORY_SEPARATOR . 'presave.js');
         return file_exists($filePath);
     }
@@ -691,21 +699,18 @@ class FileAdapter implements \H5PFileStorage
     /**
      * Check if upgrades script exist for library.
      *
-     * @param string $machineName
-     * @param int $majorVersion
-     * @param int $minorVersion
-     * @return null|string Relative path
+     * @param array $library
+     * @return string Relative path
      */
-    public function getUpgradeScript($machineName, $majorVersion, $minorVersion)
+    public function getUpgradeScript($library)
     {
-        $upgradeScript = "{$machineName}-{$majorVersion}.{$minorVersion}/upgrades.js";
+        $upgradeScript = \H5PCore::libraryToFolderName($library) . '/upgrades.js';
         $upgradesFilePath = $this->getFolderPath('libraries', false) . $upgradeScript;
 
         if (file_exists(Environment::getPublicPath() . $upgradesFilePath)) {
             return 'libraries/' . $upgradeScript;
-        } else {
-            return NULL;
         }
+        return '';
     }
 
     /**
@@ -721,7 +726,7 @@ class FileAdapter implements \H5PFileStorage
         $filePath = $path . DIRECTORY_SEPARATOR . $file;
 
         // Make sure the directory exists first
-        $matches = array();
+        $matches = [];
         preg_match('/(.+)\/[^\/]*$/', $filePath, $matches);
         self::dirReady($matches[1]);
 

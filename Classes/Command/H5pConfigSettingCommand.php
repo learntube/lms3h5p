@@ -1,15 +1,18 @@
 <?php
+
 /** @noinspection PhpUnhandledExceptionInspection */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace LMS3\Lms3h5p\Command;
 
 use LMS3\Lms3h5p\H5PAdapter\TYPO3H5P;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * H5P Config Setting Command
@@ -22,9 +25,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * H5P is a brandmark of Joubel AS - Contact: https://joubel.com/
  */
+#[AsCommand('h5p:configsetting')]
 class H5pConfigSettingCommand extends Command
 {
-    public function configure(): void
+    protected function configure(): void
     {
         $this->setDescription('Add required H5P configuration settings to the database.');
     }
@@ -32,12 +36,12 @@ class H5pConfigSettingCommand extends Command
     /**
      * Add h5p settings in database table
      */
-    public function execute(InputInterface $input, OutputInterface $output): int
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
 
         try {
-            $typo3h5p = TYPO3H5P::getInstance();
+            $typo3h5p = GeneralUtility::makeInstance(TYPO3H5P::class);
             $settings = $typo3h5p->getSettings();
             $interface = $typo3h5p->getH5PInstance();
 
