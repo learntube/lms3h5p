@@ -2,7 +2,8 @@
   "name": "lms3/lms3h5p",
   "description": "H5P Platform Integration Plugin for TYPO3 CMS",
   "type": "typo3-cms-extension",
-  "license": "GPL-2.0+",
+  "version": "4.0.0",
+  "license": "GPL-2.0-or-later",
   "authors": [
     {
       "name": "Sagar Desai",
@@ -10,9 +11,14 @@
     }
   ],
   "require": {
+    "php": "^8.2",
+    "typo3/cms-core": "^13.4",
     "ext-zip": "*",
     "h5p/h5p-core": "dev-master",
     "h5p/h5p-editor": "dev-master"
+  },
+  "replace": {
+    "typo3-ter/lms3h5p": "self.version"
   },
   "autoload": {
     "psr-4": {
@@ -20,8 +26,8 @@
     }
   },
   "extra": {
-		"typo3/cms": {
-			"extension-key": "lms3h5p"
-		}
-	}
+    "typo3/cms": {
+      "extension-key": "lms3h5p"
+    }
+  }
 }

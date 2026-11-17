@@ -1,18 +1,21 @@
 <?php
 
-$EM_CONF['lms3h5p'] = [
+$EM_CONF[$_EXTKEY] = [
     'title' => 'LMS3 H5P',
     'description' => 'H5P Platform Integration Plugin for TYPO3 CMS.',
     'category' => 'misc',
     'author' => 'Sagar Desai',
     'author_email' => 'sagardesai1990@gmail.com',
     'author_company' => 'LEARNTUBE! GmbH',
-    'state' => 'beta',
+    'state' => 'stable',
     'clearCacheOnLoad' => true,
-    'version' => '3.0.0',
+    'version' => '4.0.0',
     'constraints' => [
         'depends' => [
-            'typo3' => '12.0.0-12.99.99',
+            'typo3' => '13.4.0-13.4.99',
+            'php' => '8.2.0-8.4.99',
         ],
+        'conflicts' => [],
+        'suggests' => [],
     ],
 ];
