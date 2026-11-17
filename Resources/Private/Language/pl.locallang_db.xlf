@@ -3,7 +3,7 @@
 	<file source-language="en" target-language="pl" datatype="plaintext" original="EXT:lms3h5p/Resources/Private/Language/locallang_db.xlf" date="2023-07-05T10:06:23Z" product-name="lms3h5p">
 		<header/>
 		<body>
-			<trans-unit id="tx_lms3h5p_domain_model_pi1" resname="tx_lms3h5p_domain_model_pi1">
+			<trans-unit id="tx_lms3h5p_domain_model_pi1.name" resname="tx_lms3h5p_domain_model_pi1.name">
 				<source>LMS3: H5P Content</source>
 				<target>LMS3: H5P Inhalt</target>
 			</trans-unit>

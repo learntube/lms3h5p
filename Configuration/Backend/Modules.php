@@ -12,7 +12,7 @@ return [
         'access' => 'user',
         'workspaces' => 'live',
         'path' => '/module/web/lms3h5p',
-        'icon' => 'EXT:lms3h5p/Resources/Public/Icons/Module.svg',
+        'iconIdentifier' => 'tx-lms3h5p-plugin',
         'labels' => 'LLL:EXT:lms3h5p/Resources/Private/Language/locallang_mod.xlf',
         'extensionName' => 'lms3h5p',
         'controllerActions' => [

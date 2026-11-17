@@ -28,6 +28,10 @@ defined('TYPO3') or die();
 use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
 
 return [
+    'tx-lms3h5p-plugin' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:lms3h5p/Resources/Public/Icons/Extension.svg',
+    ],
     'tx-lms3h5p-svgicon' => [
         'provider' => SvgIconProvider::class,
         'source' => 'EXT:lms3h5p/Resources/Public/Icons/Extension.svg',

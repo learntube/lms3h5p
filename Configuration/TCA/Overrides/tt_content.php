@@ -33,7 +33,7 @@ $contentTypeName = ExtensionUtility::registerPlugin(
     'Lms3h5p',
     'Pi1',
     'LLL:EXT:lms3h5p/Resources/Private/Language/locallang_db.xlf:tx_lms3h5p_domain_model_pi1.name',
-    'tx-lms3h5p-svgicon',
+    'tx-lms3h5p-plugin',
     'LMS3',
     'LLL:EXT:lms3h5p/Resources/Private/Language/locallang_db.xlf:tx_lms3h5p_domain_model_pi1.description',
 );

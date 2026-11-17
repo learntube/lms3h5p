@@ -4,7 +4,7 @@
           product-name="lms3h5p">
         <header/>
         <body>
-            <trans-unit id="tx_lms3h5p_domain_model_pi1">
+            <trans-unit id="tx_lms3h5p_domain_model_pi1.name">
                 <source>LMS3: H5P Content</source>
                 <target>LMS3: Contenido H5P</target>
             </trans-unit>
