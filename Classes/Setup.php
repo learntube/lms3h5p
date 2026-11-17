@@ -72,13 +72,17 @@ class Setup
 
     public function __construct(private readonly ConfigurationManagerInterface $configurationManager)
     {
-        $this->ts = $this->configurationManager->getConfiguration(
-            ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
-            'Lms3h5p',
-            'Pi1'
-        );
+        try {
+            $this->ts = $this->configurationManager->getConfiguration(
+                ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS,
+                'Lms3h5p',
+                'Pi1'
+            );
+        } catch (\Throwable) {
+            // No request available (e.g. CLI bootstrap building Symfony Console namespace map)
+            $this->ts = [];
+        }
 
-        // Fallback to defaults when TypoScript is not available (CLI context)
         if (empty($this->ts)) {
             $this->ts = self::DEFAULT_SETTINGS;
         }
