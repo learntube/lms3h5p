@@ -49,7 +49,9 @@ CREATE TABLE tx_lms3h5p_domain_model_librarydependency (
     dependency_type VARCHAR(255) NOT NULL,
 
     PRIMARY KEY (uid),
-    KEY parent (pid)
+    KEY parent (pid),
+    KEY library (library),
+    KEY required_library (required_library)
 );
 
 CREATE TABLE tx_lms3h5p_domain_model_librarytranslation (
@@ -62,7 +64,8 @@ CREATE TABLE tx_lms3h5p_domain_model_librarytranslation (
     translation longtext NOT NULL,
 
     PRIMARY KEY (uid),
-    KEY parent (pid)
+    KEY parent (pid),
+    KEY library_lang (library, language_code)
 );
 
 CREATE TABLE tx_lms3h5p_domain_model_contenttypecacheentry (
@@ -106,7 +109,9 @@ CREATE TABLE tx_lms3h5p_domain_model_cachedasset (
     type VARCHAR(255) NOT NULL,
 
     PRIMARY KEY (uid),
-    KEY parent (pid)
+    KEY parent (pid),
+    KEY library (library),
+    KEY hash_key (hash_key)
 );
 
 CREATE TABLE tx_lms3h5p_domain_model_content (
@@ -140,7 +145,9 @@ CREATE TABLE tx_lms3h5p_domain_model_content (
     changes LONGTEXT DEFAULT NULL,
 
     PRIMARY KEY (uid),
-    KEY parent (pid)
+    KEY parent (pid),
+    KEY library (library),
+    KEY account (account)
 );
 
 CREATE TABLE tx_lms3h5p_domain_model_contentdependency (
@@ -155,7 +162,9 @@ CREATE TABLE tx_lms3h5p_domain_model_contentdependency (
     drop_css TINYINT(1) NOT NULL,
 
     PRIMARY KEY (uid),
-    KEY parent (pid)
+    KEY parent (pid),
+    KEY content (content),
+    KEY library (library)
 );
 
 CREATE TABLE tx_lms3h5p_domain_model_editortempfile (
