@@ -5,7 +5,10 @@ return [
         'title' => 'LMS3 H5P Cache Asset',
         'label' => 'type',
         'hideTable' => 1,
-        'iconfile' => 'EXT:lms3h5p/Resources/Public/Icons/Extension.svg'
+        'iconfile' => 'EXT:lms3h5p/Resources/Public/Icons/Extension.svg',
+        'security' => [
+            'ignorePageTypeRestriction' => true,
+        ],
     ],
     'types' => [
         '1' => [

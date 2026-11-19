@@ -28,6 +28,7 @@ namespace LMS3\Lms3h5p\Service;
  * ************************************************************* */
 
 use LMS3\Lms3h5p\H5PAdapter\TYPO3H5P;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
 use TYPO3\CMS\Core\Cache\CacheManager;
@@ -66,15 +67,16 @@ class H5PIntegrationService implements SingletonInterface
      * Returns an array with a set of core settings that the H5P JavaScript needs
      * to do its thing. Can also include editor settings.
      */
-    public function getH5PSettings(UriBuilder $uriBuilder, array $displayContentIds = []): array
+    public function getH5PSettings(UriBuilder $uriBuilder, ServerRequestInterface $request, array $displayContentIds = []): array
     {
         $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('lms3h5p_libraries');
         $cacheKey = sha1(__CLASS__ . md5(implode('-', $displayContentIds)));
         $coreSettings = $cache->get($cacheKey);
         if ($coreSettings === false) {
-            $coreSettings = $this->generateCoreSettings();
+            $coreSettings = $this->generateCoreSettings($request);
             $coreSettings['contents'] = $this->generateContentSettings(
                 $uriBuilder,
+                $request,
                 $displayContentIds
             );
 
@@ -89,9 +91,9 @@ class H5PIntegrationService implements SingletonInterface
     /**
      * Get the settings with editor
      */
-    public function getSettingsWithEditor(UriBuilder $uriBuilder, int $editorContentId = -1): array
+    public function getSettingsWithEditor(UriBuilder $uriBuilder, ServerRequestInterface $request, int $editorContentId = -1): array
     {
-        $coreSettings = $this->generateCoreSettings();
+        $coreSettings = $this->generateCoreSettings($request);
         $coreSettings['editor'] = $this->generateEditorSettings($uriBuilder, $editorContentId);
 
         return $coreSettings;
@@ -136,10 +138,12 @@ class H5PIntegrationService implements SingletonInterface
      * Returns an array with a set of core settings that the H5P JavaScript needs
      * to do its thing.
      */
-    public function generateCoreSettings(): array
+    public function generateCoreSettings(ServerRequestInterface $request): array
     {
+        $siteUrl = $request->getAttribute('normalizedParams')->getSiteUrl();
+
         return [
-            'baseUrl' => GeneralUtility::getIndpEnv('TYPO3_SITE_URL'),
+            'baseUrl' => $siteUrl,
             'url' => $this->h5pSettings['h5pPublicFolder']['url'],
             'postUserStatistics' => true,
             'ajax' => [
@@ -147,7 +151,7 @@ class H5PIntegrationService implements SingletonInterface
                 'contentUserData' => ''
             ],
             'saveFreq' => 10,
-            'siteUrl' => GeneralUtility::getIndpEnv('TYPO3_SITE_URL'),
+            'siteUrl' => $siteUrl,
             'l10n' => [
                 'H5P' => $this->getLocalization(),
             ],
@@ -237,7 +241,7 @@ class H5PIntegrationService implements SingletonInterface
     /**
      * Get settings for given content
      */
-    private function generateContentSettings(UriBuilder $uriBuilder, array $contentIds): array
+    private function generateContentSettings(UriBuilder $uriBuilder, ServerRequestInterface $request, array $contentIds): array
     {
         /** @var Content[] $contents */
         $contents = $this->contentService->findByUids($contentIds);
@@ -246,6 +250,7 @@ class H5PIntegrationService implements SingletonInterface
             return [];
         }
 
+        $siteUrl = $request->getAttribute('normalizedParams')->getSiteUrl();
         $result = [];
 
         foreach ($contents as $content) {
@@ -262,7 +267,7 @@ class H5PIntegrationService implements SingletonInterface
                 'library' => \H5PCore::libraryToString($contentArray['library']),
                 'jsonContent' => $content->getFiltered(),
                 'fullScreen' => $contentArray['library']['fullscreen'],
-                'exportUrl' => $content->getExportFile() ? GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . ltrim($this->h5pSettings['h5pPublicFolder']['url'], '/') . $this->h5pSettings['subFolders']['exports'] . DIRECTORY_SEPARATOR . $content->getExportFile() : '',
+                'exportUrl' => $content->getExportFile() ? $siteUrl . ltrim($this->h5pSettings['h5pPublicFolder']['url'], '/') . $this->h5pSettings['subFolders']['exports'] . DIRECTORY_SEPARATOR . $content->getExportFile() : '',
                 'embedCode' => '<iframe src="' . $embedUrl . '" width=":w" height=":h" frameborder="0" allowfullscreen="allowfullscreen"></iframe>',
                 'resizeCode' => '<script src="' . $h5pCorePublicUrl . '/js/h5p-resizer.js' . '" charset="UTF-8"></script>',
                 'url' => $embedUrl,

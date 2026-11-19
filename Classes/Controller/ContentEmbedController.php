@@ -106,7 +106,7 @@ class ContentEmbedController extends ActionController
 
         $query = $queryBuilder->select('pi_flexform')
             ->from('tt_content')
-            ->where('cType = "' . self::CTYPE . '" AND pid = ' . $GLOBALS['TSFE']->id . ' AND sys_language_uid IN (0, ' . $languageId . ')')
+            ->where('cType = "' . self::CTYPE . '" AND pid = ' . (int)($GLOBALS['TYPO3_REQUEST']?->getAttribute('frontend.page.information')?->getId() ?? 0) . ' AND sys_language_uid IN (0, ' . $languageId . ')')
             ->orderBy('sorting')
             ->executeQuery();
 
@@ -122,7 +122,7 @@ class ContentEmbedController extends ActionController
             $contentIds[] = $flex['settings']['contentId'];
         }
 
-        $h5pIntegrationSettings = $this->h5pIntegrationService->getH5PSettings($this->uriBuilder, array_filter($contentIds));
+        $h5pIntegrationSettings = $this->h5pIntegrationService->getH5PSettings($this->uriBuilder, $this->request, array_filter($contentIds));
         $mergedScripts = array_unique($this->h5pIntegrationService->getMergedScripts($h5pIntegrationSettings));
         $mergedStyles = array_unique($this->h5pIntegrationService->getMergedStyles($h5pIntegrationSettings));
 
@@ -138,8 +138,11 @@ class ContentEmbedController extends ActionController
          * Add H5P CSS files
          */
         foreach ($mergedStyles as $style) {
+            // Strip the ?version= cache-buster: TYPO3 v14 resolves the file via FAL
+            // and cannot resolve a URI containing a query string. The hashed
+            // cached-asset filename already provides cache busting.
             $this->pageRenderer->addCssFile(
-                $style,
+                strtok($style, '?'),
                 'stylesheet',
                 'all',
                 '',
@@ -154,7 +157,7 @@ class ContentEmbedController extends ActionController
          *  Add H5P javascript files
          */
         foreach ($mergedScripts as $script) {
-            $this->pageRenderer->addJsFile($script);
+            $this->pageRenderer->addJsFile(strtok($script, '?'));
         }
     }
 }

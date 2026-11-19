@@ -4,7 +4,10 @@ return [
     'ctrl' => [
         'title' => 'LMS3 H5P Setting',
         'label' => 'config_key',
-        'iconfile' => 'EXT:lms3h5p/Resources/Public/Icons/Extension.svg'
+        'iconfile' => 'EXT:lms3h5p/Resources/Public/Icons/Extension.svg',
+        'security' => [
+            'ignorePageTypeRestriction' => true,
+        ],
     ],
     'types' => [
         '1' => [

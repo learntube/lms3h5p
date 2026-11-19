@@ -2,7 +2,7 @@
   "name": "lms3/lms3h5p",
   "description": "H5P Platform Integration Plugin for TYPO3 CMS",
   "type": "typo3-cms-extension",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "license": "GPL-2.0-or-later",
   "authors": [
     {
@@ -12,7 +12,7 @@
   ],
   "require": {
     "php": "^8.2",
-    "typo3/cms-core": "^13.4",
+    "typo3/cms-core": "^14.0",
     "ext-zip": "*",
     "h5p/h5p-core": "dev-master",
     "h5p/h5p-editor": "dev-master"

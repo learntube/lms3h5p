@@ -691,12 +691,17 @@ class FileAdapter implements \H5PFileStorage
     /**
      * Check if upgrades script exist for library.
      *
-     * @param array $library
+     * @param string $machineName
+     * @param int $majorVersion
+     * @param int $minorVersion
      * @return null|string Relative path
      */
     public function getUpgradeScript($library)
     {
-        $upgradeScript = \H5PCore::libraryToFolderName($library) . "/upgrades.js";
+        $machineName = $library['machineName'];
+        $majorVersion = $library['majorVersion'];
+        $minorVersion = $library['minorVersion'];
+        $upgradeScript = "{$machineName}-{$majorVersion}.{$minorVersion}/upgrades.js";
         $upgradesFilePath = $this->getFolderPath('libraries', false) . $upgradeScript;
 
         if (file_exists(Environment::getPublicPath() . $upgradesFilePath)) {

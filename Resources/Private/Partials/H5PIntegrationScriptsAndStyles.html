@@ -2,7 +2,7 @@
     <link rel="stylesheet" href="{style -> f:format.raw()}"/>
 </f:for>
 
-<f:asset.script identifier="H5PIntegration" useNonce="1" priority="1">
+<f:asset.script identifier="H5PIntegration" csp="1" priority="1">
     window.H5PIntegration = {h5pSettings -> f:format.raw()};
 </f:asset.script>
 

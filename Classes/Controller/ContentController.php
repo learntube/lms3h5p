@@ -95,7 +95,7 @@ class ContentController extends AbstractModuleController
 
     public function newAction(): ResponseInterface
     {
-        $h5pIntegrationSettings = $this->h5pIntegrationService->getSettingsWithEditor($this->uriBuilder);
+        $h5pIntegrationSettings = $this->h5pIntegrationService->getSettingsWithEditor($this->uriBuilder, $this->request);
 
         $this->moduleTemplate->assignMultiple([
             'h5pSettings' => json_encode($h5pIntegrationSettings),
@@ -140,6 +140,7 @@ class ContentController extends AbstractModuleController
         $content = $this->contentService->findByUid($content);
         $h5pIntegrationSettings = $this->h5pIntegrationService->getH5PSettings(
             $this->uriBuilder,
+            $this->request,
             [
                 $content->getUid()
             ]
@@ -160,6 +161,7 @@ class ContentController extends AbstractModuleController
         $content = $this->contentService->findByUid($content);
         $h5pIntegrationSettings = $this->h5pIntegrationService->getSettingsWithEditor(
             $this->uriBuilder,
+            $this->request,
             $content->getUid()
         );
         $metadata = (object)['title' => $content->getTitle(), 'license' => $content->getLicense()];

@@ -25,6 +25,7 @@ defined('TYPO3') or die();
  *  This copyright notice MUST APPEAR in all copies of the script!
  * ************************************************************* */
 
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 
@@ -39,11 +40,18 @@ $contentTypeName = ExtensionUtility::registerPlugin(
 );
 
 // Register Flexform
-ExtensionManagementUtility::addPiFlexFormValue(
-    '*',
-    'FILE:EXT:lms3h5p/Configuration/FlexForms/FlexFormPi1.xml',
-    $contentTypeName
-);
+$GLOBALS['TCA']['tt_content']['types'][$contentTypeName]['columnsOverrides']['pi_flexform']['config']['ds']
+    = 'FILE:EXT:lms3h5p/Configuration/FlexForms/FlexFormPi1.xml';
+
+// v13: DS via columnsOverrides is unsupported, register in the ds array too.
+// addPiFlexFormValue() was removed in v14, where columnsOverrides is native.
+if ((new Typo3Version())->getMajorVersion() < 14) {
+    ExtensionManagementUtility::addPiFlexFormValue(
+        '*',
+        'FILE:EXT:lms3h5p/Configuration/FlexForms/FlexFormPi1.xml',
+        $contentTypeName
+    );
+}
 
 ExtensionManagementUtility::addToAllTCAtypes(
     'tt_content',
